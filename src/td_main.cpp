@@ -151,8 +151,8 @@ void _td_distributer_worker( tl_thread **thread )
     {
         delete (*li);
     }
-    delete _pthread;
-    *_pthread = NULL;
+    delete (*thread);
+    *thread = NULL;
 }
 
 void _td_listener_worker(tl_thread **thread)
