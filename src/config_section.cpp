@@ -21,6 +21,7 @@
 */
 
 #include "config_section.h"
+#include <algorithm>
 
 // trim from start
 std::string &ltrim(std::string &s) {
