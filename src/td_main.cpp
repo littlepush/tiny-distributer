@@ -25,17 +25,67 @@
 #include "config_section.h"
 #include <list>
 #include <vector>
-
-typedef struct {
-    sl_tcpsocket        listener;
-    sl_tcpsocket        *client;
-} relay_pair, *lreplay_pair;
+#include <map>
 
 tl_mutex __g_status_mutex;
 bool __g_status = true;
 
 int __g_port = 1025;
 config_section *__g_config = NULL;
+
+tl_mutex __g_td_mutex;
+
+// Temp struct in v0.2
+typedef map<sl_tcpsocket *, sl_tcpsocket *> _t_td_cache;
+_t_td_cache __g_td_cache;
+_t_td_cache __g_td_reverse_cache;
+
+void _td_distributer_receiver( tl_thread **thread )
+{
+    tl_thread *_pthread = *thread;
+    // Get all incoming package, 
+    // how to process these packages?
+    fd_set _fds;
+    while ( _pthread->thread_status() )
+    {
+        FD_ZERO(&_fds);
+        int _max_so = 0;
+        do {
+            tl_lock _l(__g_td_mutex);
+            for ( _t_td_cache::iterator i = __g_td_cache.begin();
+                  i != __g_td_cache.end(); 
+                  ++i )
+            {
+                FD_SET(i->first->m_socket, &_fds);
+                if ( i->first->m_socket > _max_so ) _max_so = i->first->m_socket;
+            }
+        } while ( false );
+        struct timeval _tv = {100 / 1000, 100 % 1000 * 1000};
+        int _ret = -1;
+        do {
+            _ret = select(_max_so + 1, &_fds, NULL, NULL, &_tv);
+        } while ( _ret < 0 && errno == EINTR );
+        if ( _ret < 0 ) {
+            cerr << "failed to get incoming data from client." << endl;
+            continue;
+        }
+        do {
+            tl_lock _l(__g_td_mutex);
+            for ( _t_td_cache::iterator i = __g_td_cache.begin();
+                  i != __g_td_cache.end();
+                  ++i )
+            {
+                if ( !FD_ISSET(i->first->m_socket, &_fds) ) continue;
+                // Do something...
+            }
+        } while( false );
+    }
+}
+
+void _td_distributer_redirecter( tl_thread **thread )
+{
+    // Redirect data to original client?
+}
 
 void _td_distributer_worker( tl_thread **thread )
 {
