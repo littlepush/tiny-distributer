@@ -72,9 +72,9 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
                   i != main_cache.end(); 
                   ++i )
             {
-                if ( socket_check_status(i->first->m_socket, SO_CHECK_CONNECT) == SO_INVALIDATE ) {
+                SOCKETSTATUE _status = socket_check_status(i->first->m_socket, SO_CHECK_CONNECT);
+                if ( _status == SO_INVALIDATE ) {
                     _disconnected[i->first] = i->second;
-					cout << "socket disconnected" << endl;
                     continue;
                 }
                 FD_SET(i->first->m_socket, &_fds);
@@ -91,8 +91,6 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
                 delete _client;
                 delete _recirect;
             }
-			if ( main_cache.size() == 0 ) 
-				cout << "now cache has only " << main_cache.size() << " sockets" << endl;
         } while ( false );
         if (_max_so == 0 ) continue;
 
@@ -102,11 +100,8 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
             _ret = select(_max_so + 1, &_fds, NULL, NULL, &_tv);
         } while ( _ret < 0 && errno == EINTR );
 
-        if ( _ret < 0 ) {
-            cerr << "failed to get incoming data from client." << endl;
-            continue;
-        }
-        if ( _ret == 0 ) {
+        if ( _ret <= 0 ) {
+            //cerr << "failed to get incoming data from client." << endl;
             continue;
         }
         do {
@@ -186,6 +181,8 @@ void _td_distributer_incoming(tl_thread ** thread)
                 continue;
             }
 			_so->set_reusable(true);
+            _so->set_keepalive();
+            _client->set_keepalive();
 
             tl_lock _l(__g_td_mutex);
             __g_td_cache[_client] = _so;
