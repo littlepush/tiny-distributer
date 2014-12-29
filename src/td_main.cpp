@@ -43,13 +43,12 @@ tl_semaphore __g_td_incoming_sem;
 tl_semaphore __g_td_main_sem;
 tl_semaphore __g_td_reverse_sem;
 
-void __internal_relay_worker( tl_thread **thread, _t_td_cache & main_cache, _t_td_cache & reverse_cache, tl_semaphore & main_sem)
+void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_td_cache & reverse_cache, tl_semaphore & main_sem)
 {
-    tl_thread *_pthread = *thread;
     // Get all incoming package, 
     // how to process these packages?
     fd_set _fds;
-    while ( _pthread->thread_status() )
+    while ( pthread->thread_status() )
     {
         if ( !(main_cache.size() == 0 && main_sem.get(100)) ) {
             continue;
@@ -89,7 +88,7 @@ void __internal_relay_worker( tl_thread **thread, _t_td_cache & main_cache, _t_t
         do {
             _ret = select(_max_so + 1, &_fds, NULL, NULL, &_tv);
         } while ( _ret < 0 && errno == EINTR );
-        
+
         if ( _ret < 0 ) {
             cerr << "failed to get incoming data from client." << endl;
             continue;
@@ -108,6 +107,7 @@ void __internal_relay_worker( tl_thread **thread, _t_td_cache & main_cache, _t_t
                 if ( !FD_ISSET(i->first->m_socket, &_fds) ) continue;
                 // Do something...
                 i->first->read_data(_buffer);
+                cout << "get incoming data: " << _buffer << endl;
                 i->second->write_data(_buffer);
             }
         } while( false );
@@ -116,13 +116,15 @@ void __internal_relay_worker( tl_thread **thread, _t_td_cache & main_cache, _t_t
 
 void _td_distributer_receiver( tl_thread **thread )
 {
-    __internal_relay_worker(thread, __g_td_cache, __g_td_reverse_cache, __g_td_main_sem);
+    tl_thread *_pthread = *thread;
+    __internal_relay_worker(_pthread, __g_td_cache, __g_td_reverse_cache, __g_td_main_sem);
 }
 
 void _td_distributer_redirecter( tl_thread **thread )
 {
     // Redirect data to original client?
-    __internal_relay_worker(thread, __g_td_reverse_cache, __g_td_cache, __g_td_reverse_sem);
+    tl_thread *_pthread = *thread;
+    __internal_relay_worker(_pthread, __g_td_reverse_cache, __g_td_cache, __g_td_reverse_sem);
 }
 
 void _td_distributer_incoming(tl_thread ** thread)
@@ -177,8 +179,10 @@ void _td_distributer_incoming(tl_thread ** thread)
             __g_td_cache[_client] = _so;
             __g_td_reverse_cache[_so] = _client;
             _all_correct = true;
-            __g_td_main_sem.initialize(1);
-            __g_td_reverse_sem.initialize(1);
+            __g_td_main_sem.initialize(0);
+            __g_td_main_sem.give();
+            __g_td_reverse_sem.initialize(0);
+            __g_td_reverse_sem.give();
             break;
         }
         if ( !_all_correct ) {
