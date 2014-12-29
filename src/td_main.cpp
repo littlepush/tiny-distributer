@@ -27,20 +27,20 @@
 #include <vector>
 #include <map>
 
-tl_mutex __g_status_mutex;
-bool __g_status = true;
-
 int __g_port = 1025;
 config_section *__g_config = NULL;
 
-tl_mutex __g_td_mutex;
-
 // Temp struct in v0.2
+tl_mutex __g_td_mutex;
 typedef map<sl_tcpsocket *, sl_tcpsocket *> _t_td_cache;
 _t_td_cache __g_td_cache;
 _t_td_cache __g_td_reverse_cache;
 
-void _td_distributer_receiver( tl_thread **thread )
+list<sl_tcpsocket *> __g_td_incoming_list;
+tl_mutex __g_td_incoming_mutex;
+tl_semaphore __g_td_incoming_sem;
+
+void __internal_relay_worker( tl_thread **thread, _t_td_cache & main_cache, _t_td_cache & reverse_cache)
 {
     tl_thread *_pthread = *thread;
     // Get all incoming package, 
@@ -51,13 +51,29 @@ void _td_distributer_receiver( tl_thread **thread )
         FD_ZERO(&_fds);
         int _max_so = 0;
         do {
+            _t_td_cache _disconnected;
             tl_lock _l(__g_td_mutex);
-            for ( _t_td_cache::iterator i = __g_td_cache.begin();
-                  i != __g_td_cache.end(); 
+            for ( _t_td_cache::iterator i = main_cache.begin();
+                  i != main_cache.end(); 
                   ++i )
             {
+                if ( socket_check_status(i->first->m_socket, SO_CHECK_CONNECT) == SO_INVALIDATE ) {
+                    _disconnected[i->first] = i->second;
+                    continue;
+                }
                 FD_SET(i->first->m_socket, &_fds);
                 if ( i->first->m_socket > _max_so ) _max_so = i->first->m_socket;
+            }
+            for ( _t_td_cache::iterator i = _disconnected.begin();
+                  i != _disconnected.end();
+                  ++i )
+            {
+                sl_tcpsocket *_client = i->first;
+                sl_tcpsocket *_recirect = i->second;
+                main_cache.erase(i->first);
+                reverse_cache.erase(i->second);
+                delete _client;
+                delete _recirect;
             }
         } while ( false );
         struct timeval _tv = {100 / 1000, 100 % 1000 * 1000};
@@ -70,139 +86,90 @@ void _td_distributer_receiver( tl_thread **thread )
             continue;
         }
         do {
+            string _buffer;
             tl_lock _l(__g_td_mutex);
-            for ( _t_td_cache::iterator i = __g_td_cache.begin();
-                  i != __g_td_cache.end();
+            for ( _t_td_cache::iterator i = main_cache.begin();
+                  i != main_cache.end();
                   ++i )
             {
                 if ( !FD_ISSET(i->first->m_socket, &_fds) ) continue;
                 // Do something...
+                i->first->read_data(_buffer);
+                i->second->write_data(_buffer);
             }
         } while( false );
     }
 }
 
+void _td_distributer_receiver( tl_thread **thread )
+{
+    __internal_relay_worker(thread, __g_td_cache, __g_td_reverse_cache);
+}
+
 void _td_distributer_redirecter( tl_thread **thread )
 {
     // Redirect data to original client?
+    __internal_relay_worker(thread, __g_td_reverse_cache, __g_td_cache);
 }
 
-void _td_distributer_worker( tl_thread **thread )
+void _td_distributer_incoming(tl_thread ** thread)
 {
     tl_thread *_pthread = *thread;
-    sl_tcpsocket *_client = (sl_tcpsocket *)_pthread->user_info;
-
-    bool _status = true;
-
-    vector<string> __redirect_setting;
-    list<sl_tcpsocket *> _nodes;
-    __g_config->get_sub_section_names(__redirect_setting);
-    for ( int i = 0; i < __redirect_setting.size(); ++i ) {
-        config_section *_setting = __g_config->sub_section(__redirect_setting[i]);
-
-        if ( _setting->contains_key("ip") == false ) {
-            cerr << "no redirect ip." << endl;
-            continue;
-        }
-        string _address = (*_setting)["ip"];
-        unsigned int _port = __g_port;
-        if ( _setting->contains_key("port") ) {
-            _port = atoi(((*_setting)["port"]).c_str());
-        }
-
-        sl_tcpsocket *_so = new sl_tcpsocket();
-        if ( _setting->contains_key("socks5") ) {
-            string _socks5 = (*_setting)["socks5"];
-            vector<string> _com;
-            split_string(_socks5, ":", _com);
-            if ( _com.size() != 2 ) {
-                cerr << "socks5 format error. will not connect to socks5 proxy." << endl;
-            } else {
-                _so->setup_proxy(_com[0], atoi(_com[1].c_str()));
-            }
-        }
-        if ( !_so->connect(_address, _port) ) {
-            cerr << "failed to connect to " << _address << ":" << _port << endl;
-            continue;
-        }
-
-        if ( _setting->contains_key("master") ) {
-            _nodes.insert(_nodes.begin(), _so);
-        } else {
-            _nodes.push_back(_so);
-        }
-    }
-
-    if ( _nodes.size() == 0 ) {
-        cerr << "No redirect config." << endl;
-    }
-
-    while ( _pthread->thread_status() && _nodes.size() != 0 )
+    while( _pthread->thread_status() )
     {
+        if ( __g_td_incoming_sem.get(100) == false ) continue;
+        sl_tcpsocket *_client = NULL;
         do {
-            tl_lock _l(__g_status_mutex);
-            _status = __g_status;
+            tl_lock _l(__g_td_incoming_mutex);
+            _client = __g_td_incoming_list.front();
+            __g_td_incoming_list.pop_front();
         } while ( false );
+    
+        vector<string> __redirect_setting;
+        list<sl_tcpsocket *> _nodes;
+        __g_config->get_sub_section_names(__redirect_setting);
 
-        // Close all sub thread
-        if ( _status == false ) {
-            delete _pthread;
-            _pthread = NULL;
+        bool _all_correct = false;
+        for ( int i = 0; i < __redirect_setting.size(); ++i ) {
+            config_section *_setting = __g_config->sub_section(__redirect_setting[i]);
+
+            if ( _setting->contains_key("ip") == false ) {
+                cerr << "no redirect ip." << endl;
+                continue;
+            }
+            string _address = (*_setting)["ip"];
+            unsigned int _port = __g_port;
+            if ( _setting->contains_key("port") ) {
+                _port = atoi(((*_setting)["port"]).c_str());
+            }
+
+            sl_tcpsocket *_so = new sl_tcpsocket();
+            if ( _setting->contains_key("socks5") ) {
+                string _socks5 = (*_setting)["socks5"];
+                vector<string> _com;
+                split_string(_socks5, ":", _com);
+                if ( _com.size() != 2 ) {
+                    cerr << "socks5 format error. will not connect to socks5 proxy." << endl;
+                } else {
+                    _so->setup_proxy(_com[0], atoi(_com[1].c_str()));
+                }
+            }
+            if ( !_so->connect(_address, _port) ) {
+                cerr << "failed to connect to " << _address << ":" << _port << endl;
+                delete _so;
+                continue;
+            }
+
+            tl_lock _l(__g_td_mutex);
+            __g_td_cache[_client] = _so;
+            __g_td_reverse_cache[_so] = _client;
+            _all_correct = true;
             break;
         }
-
-        SOCKETSTATUE _ss = socket_check_status(_client->m_socket);
-        if ( _ss == SO_INVALIDATE ) break;
-
-        // Do things...
-        SOCKET_T _max_so = _client->m_socket;
-        fd_set _fds;
-        FD_ZERO(&_fds);
-        FD_SET(_client->m_socket, &_fds);
-        // 100ms
-        struct timeval _tv = {100 / 1000, 100 % 1000 * 1000};
-        for ( list<sl_tcpsocket *>::iterator li = _nodes.begin(); li != _nodes.end(); ++li )
-        {
-            FD_SET((*li)->m_socket, &_fds);
-            if ( (*li)->m_socket > _max_so ) _max_so = (*li)->m_socket;
-        }
-        int _ret = 0;
-        do {
-            _ret = select(_max_so + 1, &_fds, NULL, NULL, &_tv);
-        } while ( _ret < 0 && errno == EINTR );
-        // No data
-        if ( _ret == 0 ) continue;
-
-        // Check client
-        if ( FD_ISSET(_client->m_socket, &_fds) ) {
-            string _buffer;
-            if ( !_client->read_data(_buffer) ) break;
-            for ( list<sl_tcpsocket *>::iterator li = _nodes.begin(); li != _nodes.end(); ++li )
-            {
-                (*li)->write_data(_buffer);
-            }
-        }
-        for ( list<sl_tcpsocket *>::iterator li = _nodes.begin(); li != _nodes.end(); ++li )
-        {
-            if ( !FD_ISSET((*li)->m_socket, &_fds) ) continue;
-            string _buffer;
-            // cout << "node has data incoming" << endl;
-            if ( !(*li)->read_data(_buffer) ) continue;
-            // cout << "get response: " << _buffer << endl;
-            if ( li == _nodes.begin() ) {
-                // Write back
-                _client->write_data(_buffer);
-            }
+        if ( !_all_correct ) {
+            delete _client;
         }
     }
-
-    delete _client;
-    for ( list<sl_tcpsocket *>::iterator li = _nodes.begin(); li != _nodes.end(); ++li )
-    {
-        delete (*li);
-    }
-    delete (*thread);
-    *thread = NULL;
 }
 
 void _td_listener_worker(tl_thread **thread)
@@ -222,18 +189,43 @@ void _td_listener_worker(tl_thread **thread)
 
     if ( !_is_listened ) return;
 
-    __g_status = true;
+    // Initialize the sem
+    __g_td_incoming_sem.initialize(0);
+
+    tl_thread *_receiver = new tl_thread(_td_distributer_receiver);
+    _receiver->start_thread();
+    tl_thread *_redirector = new tl_thread(_td_distributer_redirecter);
+    _redirector->start_thread();
+    tl_thread *_incoming = new tl_thread(_td_distributer_incoming);
+    _incoming->start_thread();
+
     while( _pthread->thread_status() )
     {
         sl_tcpsocket *_client = (sl_tcpsocket *)_lso.get_client();
         if ( _client == NULL ) continue;
-        tl_thread *_distributer = new tl_thread(_td_distributer_worker);
-        _distributer->user_info = _client;
-        _distributer->start_thread();
+
+        tl_lock _l(__g_td_incoming_mutex);
+        __g_td_incoming_sem.give();
+        __g_td_incoming_list.push_back(_client);
     }
 
-    tl_lock _lock(__g_status_mutex);
-    __g_status = false;
+    _incoming->stop_thread();
+    _receiver->stop_thread();
+    _redirector->stop_thread();
+    // Clean all data
+    for ( list<sl_tcpsocket *>::iterator incoming_iterator = __g_td_incoming_list.begin();
+          incoming_iterator != __g_td_incoming_list.end();
+          ++incoming_iterator)
+    {
+        _lso.release_client(*incoming_iterator);
+    }
+    for ( _t_td_cache::iterator i = __g_td_cache.begin();
+          i != __g_td_cache.end();
+          ++i )
+    {
+        delete i->first;
+        delete i->second;
+    }
 }
 
 int main( int argc, char * argv[] ) {

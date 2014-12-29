@@ -22,7 +22,7 @@ TD_ROOT = ./
 OUT_DIR = $(TD_ROOT)/result
 
 TD_DEFINES = -DVERSION=\"$(shell ./version)\" -DTARGET=\"$(shell gcc -v 2> /dev/stdout | grep Target | cut -d ' ' -f 2)\"
-THIRDPARTY = -I./inc -pthread
+THIRDPARTY = -I./inc -pthread -I/usr/local/include -L/usr/local/lib
 
 ifeq "$(MAKECMDGOALS)" "release"
 	DEFINES = $(TD_DEFINES) $(THIRDPARTY) -DCLEANDNS_RELEASE -DRELEASE
