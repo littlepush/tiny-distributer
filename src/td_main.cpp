@@ -50,9 +50,19 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
     fd_set _fds;
     while ( pthread->thread_status() )
     {
-        if ( !(main_cache.size() == 0 && main_sem.get(100)) ) {
-            continue;
-        }
+		bool _need_new_incoming = false;
+		// Check size
+		do {
+			tl_lock _l(__g_td_mutex);
+			if ( main_cache.size() == 0 ) _need_new_incoming = true;
+		} while( false );
+
+		if ( _need_new_incoming ) {
+			if ( main_sem.get(100) == false ) continue;
+		} else {
+			// try to get any...
+			main_sem.get(0);
+		}
         FD_ZERO(&_fds);
         int _max_so = 0;
         do {
@@ -64,6 +74,7 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
             {
                 if ( socket_check_status(i->first->m_socket, SO_CHECK_CONNECT) == SO_INVALIDATE ) {
                     _disconnected[i->first] = i->second;
+					cout << "socket disconnected" << endl;
                     continue;
                 }
                 FD_SET(i->first->m_socket, &_fds);
@@ -80,10 +91,12 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
                 delete _client;
                 delete _recirect;
             }
+			if ( main_cache.size() == 0 ) 
+				cout << "now cache has only " << main_cache.size() << " sockets" << endl;
         } while ( false );
         if (_max_so == 0 ) continue;
 
-        struct timeval _tv = {100 / 1000, 100 % 1000 * 1000};
+        struct timeval _tv = {0, 100 % 1000 * 1000};
         int _ret = -1;
         do {
             _ret = select(_max_so + 1, &_fds, NULL, NULL, &_tv);
@@ -94,7 +107,6 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
             continue;
         }
         if ( _ret == 0 ) {
-            cout << "timeout..." << endl;
             continue;
         }
         do {
@@ -107,7 +119,6 @@ void __internal_relay_worker( tl_thread *pthread, _t_td_cache & main_cache, _t_t
                 if ( !FD_ISSET(i->first->m_socket, &_fds) ) continue;
                 // Do something...
                 i->first->read_data(_buffer);
-                cout << "get incoming data: " << _buffer << endl;
                 i->second->write_data(_buffer);
             }
         } while( false );
@@ -174,14 +185,13 @@ void _td_distributer_incoming(tl_thread ** thread)
                 delete _so;
                 continue;
             }
+			_so->set_reusable(true);
 
             tl_lock _l(__g_td_mutex);
             __g_td_cache[_client] = _so;
             __g_td_reverse_cache[_so] = _client;
             _all_correct = true;
-            __g_td_main_sem.initialize(0);
             __g_td_main_sem.give();
-            __g_td_reverse_sem.initialize(0);
             __g_td_reverse_sem.give();
             break;
         }
@@ -225,6 +235,7 @@ void _td_listener_worker(tl_thread **thread)
         sl_tcpsocket *_client = (sl_tcpsocket *)_lso.get_client();
         if ( _client == NULL ) continue;
 
+		_client->set_reusable(true);
         tl_lock _l(__g_td_incoming_mutex);
         __g_td_incoming_list.push_back(_client);
         __g_td_incoming_sem.give();
