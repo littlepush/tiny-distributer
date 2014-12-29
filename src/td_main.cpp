@@ -82,13 +82,20 @@ void __internal_relay_worker( tl_thread **thread, _t_td_cache & main_cache, _t_t
                 delete _recirect;
             }
         } while ( false );
+        if (_max_so == 0 ) continue;
+
         struct timeval _tv = {100 / 1000, 100 % 1000 * 1000};
         int _ret = -1;
         do {
             _ret = select(_max_so + 1, &_fds, NULL, NULL, &_tv);
         } while ( _ret < 0 && errno == EINTR );
+        
         if ( _ret < 0 ) {
             cerr << "failed to get incoming data from client." << endl;
+            continue;
+        }
+        if ( _ret == 0 ) {
+            cout << "timeout..." << endl;
             continue;
         }
         do {
@@ -203,9 +210,9 @@ void _td_listener_worker(tl_thread **thread)
     __g_td_reverse_sem.initialize(0);
 
     tl_thread *_receiver = new tl_thread(_td_distributer_receiver);
-    //_receiver->start_thread();
+    _receiver->start_thread();
     tl_thread *_redirector = new tl_thread(_td_distributer_redirecter);
-    //_redirector->start_thread();
+    _redirector->start_thread();
     tl_thread *_incoming = new tl_thread(_td_distributer_incoming);
     _incoming->start_thread();
 
@@ -240,25 +247,27 @@ void _td_listener_worker(tl_thread **thread)
 
 int main( int argc, char * argv[] ) {
 
-    pid_t _pid = fork();
-    if ( _pid < 0 ) {
-        cerr << "Failed to create child process." << endl;
-        //close_config_file(_config);
-        return 1;
-    }
-    if ( _pid > 0 ) {
-        // Has create the child process.
-        // close_config_file(_config);
-        return 0;
+    if ( argc < 3 ) {
+        pid_t _pid = fork();
+        if ( _pid < 0 ) {
+            cerr << "Failed to create child process." << endl;
+            //close_config_file(_config);
+            return 1;
+        }
+        if ( _pid > 0 ) {
+            // Has create the child process.
+            // close_config_file(_config);
+            return 0;
+        }
+
+        if ( setsid() < 0 ) {
+            cerr << "failed to set session leader for child process." << endl;
+            // close_config_file(_config);
+            return 3;
+        }
     }
 
-    if ( setsid() < 0 ) {
-        cerr << "failed to set session leader for child process." << endl;
-        // close_config_file(_config);
-        return 3;
-    }
-
-    if ( argc != 2 ) {
+    if ( argc < 2 ) {
         cerr << "must specified the config file path." << endl;
         return 1;
     }
