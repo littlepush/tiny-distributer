@@ -203,9 +203,9 @@ void _td_listener_worker(tl_thread **thread)
     __g_td_reverse_sem.initialize(0);
 
     tl_thread *_receiver = new tl_thread(_td_distributer_receiver);
-    _receiver->start_thread();
+    //_receiver->start_thread();
     tl_thread *_redirector = new tl_thread(_td_distributer_redirecter);
-    _redirector->start_thread();
+    //_redirector->start_thread();
     tl_thread *_incoming = new tl_thread(_td_distributer_incoming);
     _incoming->start_thread();
 
@@ -215,8 +215,8 @@ void _td_listener_worker(tl_thread **thread)
         if ( _client == NULL ) continue;
 
         tl_lock _l(__g_td_incoming_mutex);
-        __g_td_incoming_sem.give();
         __g_td_incoming_list.push_back(_client);
+        __g_td_incoming_sem.give();
     }
 
     _incoming->stop_thread();
