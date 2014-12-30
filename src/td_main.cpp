@@ -133,6 +133,56 @@ void _td_distributer_redirecter( tl_thread **thread )
     __internal_relay_worker(_pthread, __g_td_reverse_cache, __g_td_cache, __g_td_reverse_sem);
 }
 
+void _td_distributer_tcprelay(tl_thread ** thread)
+{
+	tl_thread *_pthread = *thread;
+	while( _pthread->thread_status() )
+	{
+		if ( __g_td_incoming_sem.get(100) == false ) continue;
+		sl_tcpsocket *_client = NULL;
+		do {
+			tl_lock _l(__g_td_incoming_mutex);
+			_client = __g_td_incoming_list.front();
+			__g_td_incoming_list.pop_front();
+		} while ( false );
+
+		string _ip; u_int32_t _port = 0;
+		if ( !_client->get_original_dest( _ip, _port ) ) {
+			cerr << "failed to get original destination" << endl;
+			delete _client;
+			continue;
+		}
+
+		cout << "original destination " << _ip << ":" << _port << endl;
+
+		sl_tcpsocket *_so = new sl_tcpsocket();
+		if ( __g_config->contains_key("socks5") ) {
+			string _socks5 = (*__g_config)["socks5"];
+			vector<string> _com;
+			split_string(_socks5, ":", _com);
+			if ( _com.size() != 2 ) {
+				cerr << "socks5 format error, will not connect to socks5 proxy." << endl;
+			} else {
+				_so->setup_proxy(_com[0], atoi(_com[1].c_str()));
+			}
+		}
+		if ( !_so->connect(_ip, _port) ) {
+			cerr << "failed to connect to " << _ip << ":" << _port << endl;
+			delete _so;
+			delete _client;
+			continue;
+		}
+		_so->set_reusable(true);
+		_so->set_keepalive();
+		_client->set_keepalive();
+
+		tl_lock _l(__g_td_mutex);
+		__g_td_cache[_client] = _so;
+		__g_td_reverse_cache[_so] = _client;
+		__g_td_main_sem.give();
+		__g_td_reverse_sem.give();
+	}
+}
 void _td_distributer_incoming(tl_thread ** thread)
 {
     tl_thread *_pthread = *thread;
@@ -224,7 +274,17 @@ void _td_listener_worker(tl_thread **thread)
     _receiver->start_thread();
     tl_thread *_redirector = new tl_thread(_td_distributer_redirecter);
     _redirector->start_thread();
-    tl_thread *_incoming = new tl_thread(_td_distributer_incoming);
+
+	tl_thread *_incoming = NULL;
+	if ( __g_config->contains_key("is_tcprelay") ) {
+		if ( (*__g_config)["is_tcprelay"] == "1" ) {
+			_incoming = new tl_thread(_td_distributer_tcprelay);
+		} else {
+			_incoming = new tl_thread(_td_distributer_incoming);
+		}
+	} else {
+		_incoming = new tl_thread(_td_distributer_incoming);
+	}
     _incoming->start_thread();
 
     while( _pthread->thread_status() )
