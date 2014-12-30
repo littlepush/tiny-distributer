@@ -153,8 +153,6 @@ void _td_distributer_tcprelay(tl_thread ** thread)
 			continue;
 		}
 
-		cout << "original destination " << _ip << ":" << _port << endl;
-
 		sl_tcpsocket *_so = new sl_tcpsocket();
 		if ( __g_config->contains_key("socks5") ) {
 			string _socks5 = (*__g_config)["socks5"];
