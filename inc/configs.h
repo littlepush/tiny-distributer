@@ -110,10 +110,14 @@ class td_config_socks5 : public td_config
 {
 protected:
 	vector<td_peerinfo>			socks5_proxy_;
+	bool						noauth_;
+	map<string, string>			usrpwd_map_;
 public:
 	td_config_socks5(const string &name, const Json::Value &config_node);
 
 	const vector<td_peerinfo>& proxy_list() const;
+	bool is_support_noauth() const;
+	bool is_validate_user(const string &username, const string &password) const;
 };
 
 class td_config_backdoor : public td_config

@@ -302,9 +302,24 @@ td_config_socks5::td_config_socks5(const string &name, const Json::Value &config
 
 	Json::Value _socks5_config = config_node["socks5"];
 	g_object_to_socks5list(_socks5_config, socks5_proxy_);
+
+	noauth_ = (config_node.isMember("noauth") ? config_node["noauth"].asBool() : true);
+	if ( config_node.isMember("validation") ) {
+		Json::Value _validation = config_node["validation"];
+		for ( Json::ValueIterator _it = _validation.begin(); _it != _validation.end(); ++_it ) {
+			usrpwd_map_[_it.key().asString()] = _validation[_it.key().asString()].asString();
+		}
+	}
 }
 
 const vector<td_peerinfo>& td_config_socks5::proxy_list() const { return socks5_proxy_; }
+bool td_config_socks5::is_support_noauth() const { return noauth_; }
+bool td_config_socks5::is_validate_user(const string &username, const string &password) const {
+	auto _it = usrpwd_map_.find(username);
+	if ( _it == end(usrpwd_map_) ) return false;
+	if ( _it->second != password ) return false;
+	return true;
+}
 
 // Backdoor server Config
 td_config_backdoor::td_config_backdoor(const string &name, const Json::Value &config_node)
