@@ -19,48 +19,7 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
-
-#include <sl/tcpsocket.h>
-#include <tl/thread.h>
-#include <list>
-#include <vector>
-#include <map>
-#include "configs.h"
-#include "thread.h"
-#include "tcprelay.h"
-#include "redirect.h"
-#include "socks5.h"
-#include "backdoor.h"
-
-int main( int argc, char * argv[] ) {
-
-    if ( argc < 3 ) {
-        pid_t _pid = fork();
-        if ( _pid < 0 ) {
-            cerr << "Failed to create child process." << endl;
-            //close_config_file(_config);
-            return 1;
-        }
-        if ( _pid > 0 ) {
-            // Has create the child process.
-            // close_config_file(_config);
-            return 0;
-        }
-
-        if ( setsid() < 0 ) {
-            cerr << "failed to set session leader for child process." << endl;
-            // close_config_file(_config);
-            return 3;
-        }
-    }
-
-    if ( argc < 2 ) {
-        cerr << "must specified the config file path." << endl;
-        return 1;
-    }
-
-    return 0;
-}
+// tinydst.thread.h
 
 /*
  Push Chen.
