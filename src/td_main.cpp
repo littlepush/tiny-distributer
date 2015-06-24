@@ -56,6 +56,12 @@ int main( int argc, char * argv[] ) {
         cerr << "must specified the config file path." << endl;
         return 1;
     }
+	
+	// Hang current process
+	set_signal_handler();
+
+	// Wait for kill signal
+	wait_for_exit_signal();
 
     return 0;
 }
