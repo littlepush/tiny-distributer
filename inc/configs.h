@@ -42,6 +42,94 @@
 
 using namespace std;
 
+typedef pair<uint32_t, uint16_t>	td_peerinfo;
+typedef pair<uint32_t, uint32_t>	td_iprange;
+
+typedef struct td_dst {
+	uint32_t			ipaddr;
+	uint16_t			port;
+	bool				accept_reply;
+	vector<td_peerinfo>	socks5;
+
+	// in default appcpt_reply = true
+	td_dst();
+} td_dst;
+
+class td_config
+{
+public:
+	enum { 
+		td_server_unknow,
+		td_server_tcprelay,
+		td_server_redirect,
+		td_server_socks5,
+		td_server_backdoor
+	};
+	typedef int td_server;
+protected:
+	td_server					type_;
+	string						server_name_;
+	uint32_t					local_ip_;
+	uint16_t					port_;
+	vector<td_iprange>			source_range_;
+
+protected:
+	static td_server _server_type_from_string(const string &typestring);
+public:
+	td_config(const string &name, const Json::Value &config_node);
+	virtual ~td_config();
+
+	const string &server_name() const;
+	uint32_t local_ip() const;
+	uint16_t server_port() const;
+	bool is_ip_in_range(uint32_t ip) const;
+};
+
+class td_config_tcprelay : public td_config
+{
+protected:
+	vector<td_peerinfo>			socks5_proxy_;
+
+public:
+	td_config_tcprelay(const string &name, const Json::Value &config_node);
+
+	const vector<td_peerinfo>& proxy_list() const;
+};
+
+class td_config_redirect : public td_config
+{
+protected:
+	vector<td_dst>				dst_;
+public:
+	td_config_redirect(const string &name, const Json::Value &config_node);
+
+	const vector<td_dst>& destination_list() const;
+};
+
+class td_config_socks5 : public td_config
+{
+protected:
+	vector<td_peerinfo>			socks5_proxy_;
+public:
+	td_config_socks5(const string &name, const Json::Value &config_node);
+
+	const vector<td_peerinfo>& proxy_list() const;
+};
+
+class td_config_backdoor : public td_config
+{
+protected:
+	string						related_name_;
+	bool						accept_request_;
+	bool						accept_response_;
+public:
+	td_config_backdoor(const string &name, const Json::Value &config_node);
+
+	const string &related_server_name() const;
+	bool is_redirect_request() const;
+	bool is_redirect_response() const;
+};
+
 #endif
 
 // tinydst.configs.h
