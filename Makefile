@@ -21,8 +21,8 @@
 TD_ROOT = ./
 OUT_DIR = $(TD_ROOT)/result
 
-TD_DEFINES = -DVERSION=\"$(shell ./version)\" -DTARGET=\"$(shell gcc -v 2> /dev/stdout | grep Target | cut -d ' ' -f 2)\"
-THIRDPARTY = -I./inc -pthread -I/usr/local/include -L/usr/local/lib
+TD_DEFINES = -DVERSION=\"$(shell ./version)\" -DTARGET=\"$(shell gcc -v 2> /dev/stdout | grep Target | cut -d ' ' -f 2)\" -I./inc
+THIRDPARTY = -I./jsoncpp/
 
 ifeq "$(MAKECMDGOALS)" "release"
 	DEFINES = $(TD_DEFINES) $(THIRDPARTY) -DCLEANDNS_RELEASE -DRELEASE
@@ -46,20 +46,17 @@ else
 	endif
 endif
 
-vpath %.h   ./inc/
-vpath %.cpp	./src/
-
 CC	 = g++
 CPP	 = g++
 CXX	 = g++
 AR	 = ar
 
-CPP_FILES = $(wildcard ./src/*.cpp)
+CPP_FILES = $(wildcard ./src/*.cpp) jsoncpp/jsoncpp.cpp
 OBJ_FILES = $(CPP_FILES:.cpp=.o)
 
 STATIC_LIBS = 
 DYNAMIC_LIBS = 
-EXECUTABLE = td
+EXECUTABLE = tinydst
 TEST_CASE = 
 RELAY_OBJECT = 
 
@@ -94,8 +91,8 @@ clean :
 	rm -vf src/*.o; rm -rf $(OUT_DIR)
 
 AfterMake : 
-	rm -vf src/*.o;
-	mv -vf $(TD_ROOT)/td $(OUT_DIR)/bin/td
+	@if [ "$(MAKECMDGOALS)" == "release" ]; then rm -vf src/*.o; rm -vf jsoncpp/*.o; fi
+	@mv -vf $(TD_ROOT)/tinydst $(OUT_DIR)/bin/tinydst
 
 debug : PreProcess $(STATIC_LIBS) $(DYNAMIC_LIBS) $(EXECUTABLE) $(TEST_CASE) AfterMake
 	@exit 0
@@ -109,6 +106,6 @@ withpg : PreProcess $(STATIC_LIBS) $(DYNAMIC_LIBS) $(EXECUTABLE) $(TEST_CASE) Af
 %.o: src/%.cpp
 	$(CC) $(CXXFLAGS) -c -o $@ $<
 
-td : $(OBJ_FILES)
-	$(CC) -o $@ $^ -lsocklite -lthreadlite $(CXXFLAGS)
+tinydst: $(OBJ_FILES)
+	$(CC) -o $@ $^ $(CXXFLAGS)
 

@@ -19,6 +19,30 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#pragma once
+
+#ifndef __TINY_DISTRIBUTER_CONFIG_H__
+#define __TINY_DISTRIBUTER_CONFIG_H__
+
+#include <iostream>
+#include <string>
+#include <map>
+#include <list>
+#include <vector>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <unistd.h>
+
+#include "json/json.h"
+#include "json/json-forwards.h"
+
+using namespace std;
+
+#endif
+
 // tinydst.configs.h
 
 /*

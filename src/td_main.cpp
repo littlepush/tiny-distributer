@@ -20,8 +20,6 @@
     or @me on twitter: @littlepush
 */
 
-#include <sl/tcpsocket.h>
-#include <tl/thread.h>
 #include <list>
 #include <vector>
 #include <map>
