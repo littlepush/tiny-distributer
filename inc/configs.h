@@ -38,6 +38,7 @@
 
 #include "json/json.h"
 #include "json/json-forwards.h"
+#include "socklite/socketlite.h"
 
 using namespace std;
 

@@ -22,7 +22,7 @@ TD_ROOT = ./
 OUT_DIR = $(TD_ROOT)/result
 
 TD_DEFINES = -DVERSION=\"$(shell ./version)\" -DTARGET=\"$(shell gcc -v 2> /dev/stdout | grep Target | cut -d ' ' -f 2)\" -I./inc
-THIRDPARTY = -I./jsoncpp/
+THIRDPARTY = -I./jsoncpp -I./socklite
 
 ifeq "$(MAKECMDGOALS)" "release"
 	DEFINES = $(TD_DEFINES) $(THIRDPARTY) -DCLEANDNS_RELEASE -DRELEASE
@@ -51,7 +51,7 @@ CPP	 = g++
 CXX	 = g++
 AR	 = ar
 
-CPP_FILES = $(wildcard ./src/*.cpp) jsoncpp/jsoncpp.cpp
+CPP_FILES = $(wildcard ./src/*.cpp) jsoncpp/jsoncpp.cpp socklite/socketlite.cpp
 OBJ_FILES = $(CPP_FILES:.cpp=.o)
 
 STATIC_LIBS = 
@@ -88,10 +88,10 @@ pgclean :
 	@rm -rf $(TEST_ROOT)/withpg
 
 clean :
-	rm -vf src/*.o; rm -rf $(OUT_DIR)
+	rm -vf src/*.o; rm -vf jsoncpp/*.o; rm -vf socklite/*.o; rm -rf $(OUT_DIR)
 
 AfterMake : 
-	@if [ "$(MAKECMDGOALS)" == "release" ]; then rm -vf src/*.o; rm -vf jsoncpp/*.o; fi
+	@if [ "$(MAKECMDGOALS)" == "release" ]; then rm -vf src/*.o; rm -vf jsoncpp/*.o; rm -vf socklite/*.o; fi
 	@mv -vf $(TD_ROOT)/tinydst $(OUT_DIR)/bin/tinydst
 
 debug : PreProcess $(STATIC_LIBS) $(DYNAMIC_LIBS) $(EXECUTABLE) $(TEST_CASE) AfterMake
