@@ -20,9 +20,6 @@
     or @me on twitter: @littlepush
 */
 
-#include <list>
-#include <vector>
-#include <map>
 #include "configs.h"
 #include "thread.h"
 #include "tcprelay.h"
@@ -57,6 +54,15 @@ int main( int argc, char * argv[] ) {
         return 1;
     }
 	
+	// Load config
+	Json::Value _config_root;
+	Json::Reader _config_reader;
+	ifstream _config_stream(argv[1], std::ifstream::binary);
+	if ( !_config_reader.parse(_config_stream, _config_root, false ) ) {
+		cout << _config_reader.getFormattedErrorMessages() << endl;
+		return 1;
+	}
+
 	// Hang current process
 	set_signal_handler();
 
