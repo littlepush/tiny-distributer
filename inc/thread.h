@@ -19,6 +19,28 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#include <thread>
+#include <mutex>
+
+using namespace std;
+
+// Hang up current process, and wait for exit signal
+void set_signal_handler();
+
+// Wait until we receive exit signal, this function will block
+// current thread.
+void wait_for_exit_signal();
+
+// Register current thread
+void register_this_thread();
+
+// Stop all thread registered
+void join_all_threads();
+
+// Check this thread's status
+bool this_thread_is_running();
+
 // tinydst.thread.h
 
 /*
