@@ -364,6 +364,11 @@ bool td_service::start_service() {
 	}
 	return false;
 }
+bool td_service::accept_new_incoming(SOCKET_T so) {
+	uint32_t _ipaddr, _port;
+	network_peer_info_from_socket(so, _ipaddr, _port);
+	return config_->is_ip_in_range(_ipaddr) == false;
+}
 
 void td_service::registe_request_redirect(td_service::td_data_redirect redirect) {
 	request_redirect_.push_back(redirect);

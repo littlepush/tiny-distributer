@@ -30,7 +30,7 @@ public:
 	td_service_tcprelay(const string &name, const Json::Value &config_node);
 	~td_service_tcprelay();
 
-	virtual void accept_new_incoming(SOCKET_T so);
+	virtual bool accept_new_incoming(SOCKET_T so);
 	virtual void close_socket(SOCKET_T so);
 	virtual void socket_has_data_incoming(SOCKET_T so);
 };

@@ -157,7 +157,7 @@ public:
 	bool is_maintaining_socket(SOCKET_T so) const;
 
 	virtual bool start_service();
-	virtual void accept_new_incoming(SOCKET_T so) = 0;
+	virtual bool accept_new_incoming(SOCKET_T so) = 0;
 	virtual void close_socket(SOCKET_T so) = 0;
 	virtual void socket_has_data_incoming(SOCKET_T so) = 0;
 

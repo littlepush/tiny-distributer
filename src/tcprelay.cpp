@@ -29,14 +29,11 @@ td_service_tcprelay::td_service_tcprelay(const string &name, const Json::Value &
 td_service_tcprelay::~td_service_tcprelay() {
 	delete config_;
 }
-void td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
+bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	sl_tcpsocket _wrap_src(so);
-	// Check ip-range
-	uint32_t _ipaddr, _port;
-	network_peer_info_from_socket(so, _ipaddr, _port);
-	if ( config_->is_ip_in_range(_ipaddr) == false ) {
+	if ( !td_service::accept_new_incoming(so) ) {
 		_wrap_src.close();
-		return;
+		return false;
 	}
 
 	// Get original destination
@@ -45,7 +42,7 @@ void td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	if ( !_wrap_src.get_original_dest(_org_addr, _org_port) ) {
 		// The socket is not validate
 		_wrap_src.close();
-		return;
+		return false;
 	}
 
 	sl_tcpsocket _wrap_dst(true);
@@ -57,7 +54,7 @@ void td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
 		_wrap_dst.close();
 		_wrap_src.close();
-		return;
+		return true;
 	}
 	request_so_[_wrap_src.m_socket] = true;
 	tunnel_so_[_wrap_dst.m_socket] = true;
@@ -65,6 +62,7 @@ void td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	so_map_[_wrap_dst.m_socket] = _wrap_src.m_socket;
 	sl_poller::server().monitor_socket(_wrap_src.m_socket);
 	sl_poller::server().monitor_socket(_wrap_dst.m_socket);
+	return true;
 }
 
 void td_service_tcprelay::close_socket(SOCKET_T so) {
