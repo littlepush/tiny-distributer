@@ -22,29 +22,19 @@
 
 #include "tcprelay.h"
 
-const string& td_service_tcprelay::server_name() const {
-	return config_.server_name();
-}
 td_service_tcprelay::td_service_tcprelay(const string &name, const Json::Value &config_node)
-	: config_(name, config_node)
 {
-
+	config_ = new td_config_tcprelay(name, config_node);
 }
-
-bool td_service_tcprelay::start_service() {
-	for ( int i = 0; i < 30; ++i ) {
-		if (server_so_.listen(config_.server_port(), config_.local_ip())) return true;
-		sleep(1);
-	}
-	return false;
+td_service_tcprelay::~td_service_tcprelay() {
+	delete config_;
 }
-
 void td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	sl_tcpsocket _wrap_src(so);
 	// Check ip-range
 	uint32_t _ipaddr, _port;
 	network_peer_info_from_socket(so, _ipaddr, _port);
-	if ( config_.is_ip_in_range(_ipaddr) == false ) {
+	if ( config_->is_ip_in_range(_ipaddr) == false ) {
 		_wrap_src.close();
 		return;
 	}
@@ -59,7 +49,7 @@ void td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	}
 
 	sl_tcpsocket _wrap_dst(true);
-	for ( auto &_socks5 : config_.proxy_list() ) {
+	for ( auto &_socks5 : static_cast<td_config_tcprelay *>(config_)->proxy_list() ) {
 		string _ipaddr;
 		network_int_to_ipaddress(_socks5.first, _ipaddr);
 		if ( _wrap_dst.setup_proxy(_ipaddr, _socks5.second) ) break;

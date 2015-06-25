@@ -141,6 +141,7 @@ class td_service
 public:
 	typedef void (*td_data_redirect)(const string &);
 protected:
+	td_config					*config_;
 	sl_tcpsocket	 			server_so_;
 	map<SOCKET_T, bool>			request_so_;
 	map<SOCKET_T, bool> 		tunnel_so_;
@@ -150,12 +151,12 @@ public:
 	sl_tcpsocket& server_so();
 
 	// Get the server's name
-	virtual const string &server_name() const = 0;
+	const string &server_name() const;
 
 	// Check if the socket is maintained by current service
 	bool is_maintaining_socket(SOCKET_T so) const;
 
-	virtual bool start_service() = 0;
+	virtual bool start_service();
 	virtual void accept_new_incoming(SOCKET_T so) = 0;
 	virtual void close_socket(SOCKET_T so) = 0;
 	virtual void socket_has_data_incoming(SOCKET_T so) = 0;

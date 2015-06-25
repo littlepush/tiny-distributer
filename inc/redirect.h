@@ -19,6 +19,15 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#include "configs.h"
+
+class td_service_redirect : public td_service
+{
+protected:
+	td_config_redirect			config_;
+};
+
 // tinydst.redirect.h
 
 /*

@@ -25,13 +25,11 @@
 class td_service_tcprelay : public td_service
 {
 protected:
-	td_config_tcprelay		config_;
 	map<SOCKET_T, SOCKET_T>	so_map_;
 public:
-	virtual const string& server_name() const;
 	td_service_tcprelay(const string &name, const Json::Value &config_node);
+	~td_service_tcprelay();
 
-	virtual bool start_service();
 	virtual void accept_new_incoming(SOCKET_T so);
 	virtual void close_socket(SOCKET_T so);
 	virtual void socket_has_data_incoming(SOCKET_T so);

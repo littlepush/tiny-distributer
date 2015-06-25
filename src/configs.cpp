@@ -344,6 +344,9 @@ bool td_config_backdoor::is_redirect_response() const { return accept_response_;
 // Service
 sl_tcpsocket& td_service::server_so() { return server_so_; }
 
+const string& td_service::server_name() const {
+	return config_->server_name();
+}
 bool td_service::is_maintaining_socket(SOCKET_T so) const {
 	auto _reqit = request_so_.find(so);
 	if ( _reqit != request_so_.end() ) return true;
@@ -351,6 +354,17 @@ bool td_service::is_maintaining_socket(SOCKET_T so) const {
 	if ( _tunit != tunnel_so_.end() ) return true;
 	return false;
 }
+bool td_service::start_service() {
+	for ( int i = 0; i < 30; ++i ) {
+		if (server_so_.listen(config_->server_port(), config_->local_ip())) {
+			sl_poller::server().bind_tcp_server(server_so_.m_socket);
+			return true;
+		}
+		sleep(1);
+	}
+	return false;
+}
+
 void td_service::registe_request_redirect(td_service::td_data_redirect redirect) {
 	request_redirect_.push_back(redirect);
 }
