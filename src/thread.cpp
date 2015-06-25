@@ -63,7 +63,7 @@ static map< thread::id, pair< shared_ptr<mutex>, shared_ptr<bool> > >& __g_threa
 void register_this_thread() {
 	__g_threadinfo()[this_thread::get_id()] = make_pair(make_shared<mutex>(), make_shared<bool>(true));
 }
-void join_all_thread() {
+void join_all_threads() {
 	for ( auto &_kv : __g_threadinfo() ) {
 		lock_guard<mutex>(*_kv.second.first);
 		*_kv.second.second = false;

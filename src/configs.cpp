@@ -190,7 +190,7 @@ td_dst::td_dst(): accept_reply(true) {
 }
 
 // Basic Config 
-td_config::td_server td_config::_server_type_from_string(const string &typestring) {
+td_config::td_server td_config::server_type_from_string(const string &typestring) {
 	static map<string, td_server> _map;
 	if ( _map.size() == 0 ) {
 		_map["TCPRELAY"] = td_server_tcprelay;
@@ -211,7 +211,7 @@ td_config::td_config(const string &name, const Json::Value &config_node)
 		throw(runtime_error(_oss.str()));
 	}
 	string _server_type = config_node["server"].asString();
-	type_ = _server_type_from_string(_server_type);
+	type_ = server_type_from_string(_server_type);
 	if ( type_ == td_server_unknow ) {
 		_oss << "unknow server type (" << _server_type << ") for section " << server_name_;
 		throw(runtime_error(_oss.str()));
@@ -340,6 +340,39 @@ td_config_backdoor::td_config_backdoor(const string &name, const Json::Value &co
 const string& td_config_backdoor::related_server_name() const { return related_name_; }
 bool td_config_backdoor::is_redirect_request() const { return accept_request_; }
 bool td_config_backdoor::is_redirect_response() const { return accept_response_; }
+
+// Service
+sl_tcpsocket& td_service::server_so() { return server_so_; }
+
+bool td_service::is_maintaining_socket(SOCKET_T so) const {
+	auto _reqit = request_so_.find(so);
+	if ( _reqit != request_so_.end() ) return true;
+	auto _tunit = tunnel_so_.find(so);
+	if ( _tunit != tunnel_so_.end() ) return true;
+	return false;
+}
+
+vector<shared_ptr<td_service>> &g_service_list() {
+	static vector<shared_ptr<td_service>> _l;
+	return _l;
+}
+bool register_new_service(shared_ptr<td_service> service) {
+	if ( service->start_service() == false ) return false;
+	g_service_list().push_back(service);
+	return true;
+}
+shared_ptr<td_service> services_by_socket(SOCKET_T so) {
+	for ( auto &_ptr : g_service_list() ) {
+		if ( _ptr->server_so().m_socket == so ) return _ptr;
+	}
+	return shared_ptr<td_service>(nullptr);
+}
+shared_ptr<td_service> services_by_maintaining_socket(SOCKET_T so) {
+	for ( auto &_ptr : g_service_list() ) {
+		if ( _ptr->is_maintaining_socket(so) ) return _ptr;
+	}
+	return shared_ptr<td_service>(nullptr);
+}
 
 // tinydst.configs.cpp
 

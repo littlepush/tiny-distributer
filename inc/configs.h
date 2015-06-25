@@ -74,8 +74,8 @@ protected:
 	uint16_t					port_;
 	vector<td_iprange>			source_range_;
 
-protected:
-	static td_server _server_type_from_string(const string &typestring);
+public:
+	static td_server server_type_from_string(const string &typestring);
 public:
 	td_config(const string &name, const Json::Value &config_node);
 	virtual ~td_config();
@@ -134,6 +134,33 @@ public:
 	bool is_redirect_request() const;
 	bool is_redirect_response() const;
 };
+
+// Serveice Base Class
+class td_service
+{
+	sl_tcpsocket	 			server_so_;
+	map<SOCKET_T, bool>			request_so_;
+	map<SOCKET_T, bool> 		tunnel_so_;
+public:
+	sl_tcpsocket& server_so();
+
+	bool is_maintaining_socket(SOCKET_T so) const;
+
+	virtual bool start_service() = 0;
+	virtual void accept_new_incoming(SOCKET_T so) = 0;
+	virtual void close_socket(SOCKET_T so) = 0;
+	virtual void socket_has_data_incoming(SOCKET_T so) = 0;
+};
+
+// Register the new service, serach progress will search all 
+// registed services.
+bool register_new_service(shared_ptr<td_service> service);
+
+// Get the service which its server socket is equal to so
+shared_ptr<td_service> services_by_socket(SOCKET_T so);
+
+// Get the service which maintain the client socket as so
+shared_ptr<td_service> services_by_maintaining_socket(SOCKET_T so);
 
 #endif
 
