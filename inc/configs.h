@@ -138,6 +138,7 @@ public:
 // Serveice Base Class
 class td_service
 {
+protected:
 	sl_tcpsocket	 			server_so_;
 	map<SOCKET_T, bool>			request_so_;
 	map<SOCKET_T, bool> 		tunnel_so_;

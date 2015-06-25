@@ -19,6 +19,24 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#include "configs.h"
+
+class td_service_tcprelay : public td_service
+{
+protected:
+	td_config_tcprelay		config_;
+	map<SOCKET_T, SOCKET_T>	so_map_;
+public:
+	const string service_name() const;
+	td_service_tcprelay(const string &name, const Json::Value &config_node);
+
+	virtual bool start_service();
+	virtual void accept_new_incoming(SOCKET_T so);
+	virtual void close_socket(SOCKET_T so);
+	virtual void socket_has_data_incoming(SOCKET_T so);
+};
+
 // tinydst.tcprelay.h
 
 /*
