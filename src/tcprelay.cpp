@@ -22,7 +22,7 @@
 
 #include "tcprelay.h"
 
-const string td_service_tcprelay::service_name() const {
+const string& td_service_tcprelay::server_name() const {
 	return config_.server_name();
 }
 td_service_tcprelay::td_service_tcprelay(const string &name, const Json::Value &config_node)
@@ -102,10 +102,16 @@ void td_service_tcprelay::socket_has_data_incoming(SOCKET_T so) {
 		if ( request_so_.find(so) != request_so_.end() ) {
 			// This is a request socket
 			// broadcast to all backdoor services
+			for ( auto _rd : request_redirect_ ) {
+				_rd(_buf);
+			}
 		}
 		if ( tunnel_so_.find(so) != tunnel_so_.end() ) {
 			// This is a tunnel socket, which means is a response data.
 			// broadcast to all backdoor services
+			for ( auto _rd : response_redirect_ ) {
+				_rd(_buf);
+			}
 		}
 	}
 }

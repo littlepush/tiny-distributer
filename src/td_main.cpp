@@ -36,13 +36,13 @@ void tiny_distributer_worker( ) {
 		sl_poller::server().fetch_events(_event_list);
 		for ( auto &_event : _event_list ) {
 			if ( _event.event == SL_EVENT_FAILED ) {
-				shared_ptr<td_service> _psvr = services_by_maintaining_socket(_event.so);
+				shared_ptr<td_service> _psvr = service_by_maintaining_socket(_event.so);
 				if ( _psvr != nullptr ) _psvr->close_socket(_event.so);
 			} else if ( _event.event == SL_EVENT_ACCEPT ) {
-				shared_ptr<td_service> _psvr = services_by_socket(_event.source);
+				shared_ptr<td_service> _psvr = service_by_socket(_event.source);
 				if ( _psvr != nullptr ) _psvr->accept_new_incoming(_event.so);
 			} else {
-				shared_ptr<td_service> _psvr = services_by_maintaining_socket(_event.so);
+				shared_ptr<td_service> _psvr = service_by_maintaining_socket(_event.so);
 				if ( _psvr != nullptr ) _psvr->socket_has_data_incoming(_event.so);
 			}
 		}
@@ -100,9 +100,8 @@ int main( int argc, char * argv[] ) {
 		}
 		// Try to create services
 		if ( _type == td_config::td_server_tcprelay ) {
-			td_config_tcprelay _config(_server_name, _config_node);
-			cout << _server_name << " is " << _server_type_name << 
-				", listen on: " << _config.server_port() << endl;
+			td_service_tcprelay *_service = new td_service_tcprelay(_server_name, _config_node);
+			registe_new_service(shared_ptr<td_service>(_service));
 		} else if ( _type == td_config::td_server_redirect ) {
 			td_config_redirect _config(_server_name, _config_node);
 			cout << _server_name << " is " << _server_type_name << 

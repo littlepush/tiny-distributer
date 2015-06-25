@@ -28,7 +28,7 @@ protected:
 	td_config_tcprelay		config_;
 	map<SOCKET_T, SOCKET_T>	so_map_;
 public:
-	const string service_name() const;
+	virtual const string& server_name() const;
 	td_service_tcprelay(const string &name, const Json::Value &config_node);
 
 	virtual bool start_service();

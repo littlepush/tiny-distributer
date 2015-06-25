@@ -351,25 +351,37 @@ bool td_service::is_maintaining_socket(SOCKET_T so) const {
 	if ( _tunit != tunnel_so_.end() ) return true;
 	return false;
 }
+void td_service::registe_request_redirect(td_service::td_data_redirect redirect) {
+	request_redirect_.push_back(redirect);
+}
+void td_service::registe_response_redirect(td_service::td_data_redirect redirect) {
+	response_redirect_.push_back(redirect);
+}
 
 vector<shared_ptr<td_service>> &g_service_list() {
 	static vector<shared_ptr<td_service>> _l;
 	return _l;
 }
-bool register_new_service(shared_ptr<td_service> service) {
+bool registe_new_service(shared_ptr<td_service> service) {
 	if ( service->start_service() == false ) return false;
 	g_service_list().push_back(service);
 	return true;
 }
-shared_ptr<td_service> services_by_socket(SOCKET_T so) {
+shared_ptr<td_service> service_by_socket(SOCKET_T so) {
 	for ( auto &_ptr : g_service_list() ) {
 		if ( _ptr->server_so().m_socket == so ) return _ptr;
 	}
 	return shared_ptr<td_service>(nullptr);
 }
-shared_ptr<td_service> services_by_maintaining_socket(SOCKET_T so) {
+shared_ptr<td_service> service_by_maintaining_socket(SOCKET_T so) {
 	for ( auto &_ptr : g_service_list() ) {
 		if ( _ptr->is_maintaining_socket(so) ) return _ptr;
+	}
+	return shared_ptr<td_service>(nullptr);
+}
+shared_ptr<td_service> service_by_name(const string &name) {
+	for ( auto &_ptr : g_service_list() ) {
+		if ( _ptr->server_name() == name ) return _ptr;
 	}
 	return shared_ptr<td_service>(nullptr);
 }

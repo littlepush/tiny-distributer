@@ -138,30 +138,45 @@ public:
 // Serveice Base Class
 class td_service
 {
+public:
+	typedef void (*td_data_redirect)(const string &);
 protected:
 	sl_tcpsocket	 			server_so_;
 	map<SOCKET_T, bool>			request_so_;
 	map<SOCKET_T, bool> 		tunnel_so_;
+	vector<td_data_redirect>	request_redirect_;
+	vector<td_data_redirect>	response_redirect_;
 public:
 	sl_tcpsocket& server_so();
 
+	// Get the server's name
+	virtual const string &server_name() const = 0;
+
+	// Check if the socket is maintained by current service
 	bool is_maintaining_socket(SOCKET_T so) const;
 
 	virtual bool start_service() = 0;
 	virtual void accept_new_incoming(SOCKET_T so) = 0;
 	virtual void close_socket(SOCKET_T so) = 0;
 	virtual void socket_has_data_incoming(SOCKET_T so) = 0;
+
+	// Backdoor redirect
+	void registe_request_redirect(td_data_redirect redirect);
+	void registe_response_redirect(td_data_redirect redirect);
 };
 
 // Register the new service, serach progress will search all 
 // registed services.
-bool register_new_service(shared_ptr<td_service> service);
+bool registe_new_service(shared_ptr<td_service> service);
 
 // Get the service which its server socket is equal to so
-shared_ptr<td_service> services_by_socket(SOCKET_T so);
+shared_ptr<td_service> service_by_socket(SOCKET_T so);
 
 // Get the service which maintain the client socket as so
-shared_ptr<td_service> services_by_maintaining_socket(SOCKET_T so);
+shared_ptr<td_service> service_by_maintaining_socket(SOCKET_T so);
+
+// Get the service by server name
+shared_ptr<td_service> service_by_name(const string &name);
 
 #endif
 
