@@ -22,10 +22,13 @@
 
 #include "configs.h"
 
-class td_service_redirect : public td_service
+class td_service_redirect : public td_service_tunnel
 {
-protected:
+public:
+	td_service_redirect(const string &name, const Json::Value &config_node);
+	~td_service_redirect();
 
+	virtual bool accept_new_incoming(SOCKET_T so);
 };
 
 // tinydst.redirect.h

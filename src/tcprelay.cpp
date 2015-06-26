@@ -47,61 +47,18 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 
 	sl_tcpsocket _wrap_dst(true);
 	for ( auto &_socks5 : static_cast<td_config_tcprelay *>(config_)->proxy_list() ) {
-		string _ipaddr;
-		network_int_to_ipaddress(_socks5.first, _ipaddr);
-		if ( _wrap_dst.setup_proxy(_ipaddr, _socks5.second) ) break;
+		if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
 	}
 	if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
 		_wrap_dst.close();
 		_wrap_src.close();
 		return true;
 	}
-	request_so_[_wrap_src.m_socket] = true;
-	tunnel_so_[_wrap_dst.m_socket] = true;
-	so_map_[_wrap_src.m_socket] = _wrap_dst.m_socket;
-	so_map_[_wrap_dst.m_socket] = _wrap_src.m_socket;
-	sl_poller::server().monitor_socket(_wrap_src.m_socket);
-	sl_poller::server().monitor_socket(_wrap_dst.m_socket);
+
+	// Add to monitor
+	this->_did_accept_sockets(_wrap_src.m_socket, _wrap_dst.m_socket);
+
 	return true;
-}
-
-void td_service_tcprelay::close_socket(SOCKET_T so) {
-	auto _peer = so_map_.find(so);
-	if ( _peer == so_map_.end() ) return;
-	// Close and clear
-	close(so);
-	close(_peer->second);
-	request_so_.erase(so);
-	tunnel_so_.erase(so);
-	request_so_.erase(_peer->second);
-	tunnel_so_.erase(_peer->second);
-	so_map_.erase(so);
-	so_map_.erase(_peer->second);
-}
-
-void td_service_tcprelay::socket_has_data_incoming(SOCKET_T so) {
-	sl_tcpsocket _wrapso(so);
-	auto _peer = so_map_.find(so);
-	sl_tcpsocket _wrapdso(_peer->second);
-	string _buf;
-	if ( _wrapso.read_data(_buf) ) {
-		_wrapdso.write_data(_buf);
-
-		if ( request_so_.find(so) != request_so_.end() ) {
-			// This is a request socket
-			// broadcast to all backdoor services
-			for ( auto _rd : request_redirect_ ) {
-				_rd(_buf);
-			}
-		}
-		if ( tunnel_so_.find(so) != tunnel_so_.end() ) {
-			// This is a tunnel socket, which means is a response data.
-			// broadcast to all backdoor services
-			for ( auto _rd : response_redirect_ ) {
-				_rd(_buf);
-			}
-		}
-	}
 }
 
 // tinydst.tcprelay.cpp

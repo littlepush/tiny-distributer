@@ -149,16 +149,12 @@ static td_peerinfo g_object_to_peerinfo(const Json::Value &object) {
 	}
 	Json::Value _addr = object["addr"];
 	Json::Value _port = object["port"];
-	uint32_t _ipaddr = g_string_to_ipint(_addr.asString());
-	if ( _ipaddr == 0 ) {
-		throw(runtime_error("invalidate ip address in peer info"));
-	}
 	uint32_t _p = _port.asUInt();
 	if ( _p == 0 || _p > 65535 ) {
 		throw(runtime_error("invalidate port in peer info"));
 	}
 	uint16_t _uport = (uint16_t)_p;
-	return make_pair(_ipaddr, _uport);
+	return make_pair(_addr.asString(), _uport);
 }
 
 static void g_object_to_socks5list(const Json::Value &socks5obj, vector<td_peerinfo> &proxylist) {
@@ -375,6 +371,53 @@ void td_service::registe_request_redirect(td_service::td_data_redirect redirect)
 }
 void td_service::registe_response_redirect(td_service::td_data_redirect redirect) {
 	response_redirect_.push_back(redirect);
+}
+
+void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
+	request_so_[src] = true;
+	tunnel_so_[dst] = true;
+	so_map_[src] = dst;
+	so_map_[dst] = src;
+	sl_poller::server().monitor_socket(src);
+	sl_poller::server().monitor_socket(dst);
+}
+
+void td_service_tunnel::close_socket(SOCKET_T so) {
+	auto _peer = so_map_.find(so);
+	if ( _peer == so_map_.end() ) return;
+	// Close and clear
+	close(so);
+	close(_peer->second);
+	request_so_.erase(so);
+	tunnel_so_.erase(so);
+	request_so_.erase(_peer->second);
+	so_map_.erase(so);
+	so_map_.erase(_peer->second);
+}
+
+void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
+	sl_tcpsocket _wrapso(so);
+	auto _peer = so_map_.find(so);
+	sl_tcpsocket _wrapdso(_peer->second);
+	string _buf;
+	if ( _wrapso.read_data(_buf) ) {
+		_wrapdso.write_data(_buf);
+
+		if ( request_so_.find(so) != request_so_.end() ) {
+			// This is a request socket
+			// broadcast to all backdoor services
+			for ( auto _rd : request_redirect_ ) {
+				_rd(_buf);
+			}
+		}
+		if ( tunnel_so_.find(so) != tunnel_so_.end() ) {
+			// This is a tunnel socket, which means is a response data.
+			// broadcast to all backdoor services
+			for ( auto _rd : response_redirect_ ) {
+				_rd(_buf);
+			}
+		}
+	}
 }
 
 vector<shared_ptr<td_service>> &g_service_list() {

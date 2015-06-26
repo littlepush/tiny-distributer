@@ -43,11 +43,11 @@
 
 using namespace std;
 
-typedef pair<uint32_t, uint16_t>	td_peerinfo;
+typedef pair<string, uint16_t>		td_peerinfo;
 typedef pair<uint32_t, uint32_t>	td_iprange;
 
 typedef struct td_dst {
-	uint32_t			ipaddr;
+	string				ipaddr;
 	uint16_t			port;
 	bool				accept_reply;
 	vector<td_peerinfo>	socks5;
@@ -164,6 +164,17 @@ public:
 	// Backdoor redirect
 	void registe_request_redirect(td_data_redirect redirect);
 	void registe_response_redirect(td_data_redirect redirect);
+};
+
+class td_service_tunnel : public td_service
+{
+protected:
+	map<SOCKET_T, SOCKET_T>		so_map_;
+
+	void _did_accept_sockets(SOCKET_T src, SOCKET_T dst);
+public:
+	virtual void close_socket(SOCKET_T so);
+	virtual void socket_has_data_incoming(SOCKET_T so);
 };
 
 // Register the new service, serach progress will search all 
