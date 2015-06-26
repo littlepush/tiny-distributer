@@ -19,6 +19,18 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#include "configs.h"
+
+class td_service_socks5 : public td_service_tunnel
+{
+public:
+	td_service_socks5(const string &name, const Json::Value &config_node);
+	~td_service_socks5();
+
+	virtual bool accept_new_incoming(SOCKET_T so);
+};
+
 // tinydst.socks5.h
 
 /*
