@@ -25,7 +25,7 @@
 class td_service_redirect : public td_service
 {
 protected:
-	td_config_redirect			config_;
+
 };
 
 // tinydst.redirect.h
