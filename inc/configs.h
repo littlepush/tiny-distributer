@@ -31,6 +31,7 @@
 #include <list>
 #include <vector>
 #include <fstream>
+#include <memory>
 
 #include <stdio.h>
 #include <stdlib.h>
