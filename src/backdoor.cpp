@@ -19,6 +19,85 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#include "backdoor.h"
+
+static map<td_service_backdoor *, bool>& g_backdoor_map() {
+	static map<td_service_backdoor *, bool> _m;
+	return _m;
+}
+
+void td_service_backdoor::bind_backdoor_services() {
+	for( auto &_it : g_backdoor_map() ) {
+		_it.first->register_backdoor_();
+	}
+}
+
+void td_service_backdoor::register_backdoor_() {
+	td_config_backdoor *_cfg = static_cast<td_config_backdoor *>(config_);
+	shared_ptr<td_service> _pservice = service_by_name(_cfg->related_server_name());
+	if ( _pservice == NULL ) return;
+	if ( _cfg->is_redirect_request() ) {
+		_pservice->register_request_redirect(
+				[this](const string &data){ this->request_redirector_(data); }
+				);
+	}
+	if ( _cfg->is_redirect_response() ) {
+		_pservice->register_response_redirect(
+				[this](const string &data){ this->response_redirector_(data); }
+				);
+	}
+}
+
+void td_service_backdoor::request_redirector_(const string &data) {
+	for ( auto &_soit : request_so_ ) {
+		sl_tcpsocket _wso(_soit.first);
+		_wso.write_data(data);
+	}
+}
+
+void td_service_backdoor::response_redirector_(const string &data ) {
+	for ( auto &_soit : request_so_ ) {
+		sl_tcpsocket _wso(_soit.first);
+		_wso.write_data(data);
+	}
+}
+
+td_service_backdoor::td_service_backdoor(const string &name, const Json::Value& config_node) {
+	config_ = new td_config_backdoor(name, config_node);
+	g_backdoor_map()[this] = true;
+}
+
+td_service_backdoor::~td_service_backdoor() {
+	g_backdoor_map().erase(this);
+	delete config_;
+}
+
+bool td_service_backdoor::accept_new_incoming(SOCKET_T so) {
+	// Check IP range
+	sl_tcpsocket _wso(so);
+	if ( !td_service::accept_new_incoming(so) ) {
+		_wso.close();
+		return false;
+	}
+	
+	// We accept all request.
+	request_so_[so] = true;
+	return true;
+}
+
+void td_service_backdoor::close_socket(SOCKET_T so) {
+	request_so_.erase(so);
+	close(so);
+}
+
+void td_service_backdoor::socket_has_data_incoming(SOCKET_T so) {
+	sl_tcpsocket _wso(so);
+	string _buffer;
+	_wso.read_data(_buffer);
+	// do nothing
+}
+
 // tinydst.backdoor.cpp
 
 /*

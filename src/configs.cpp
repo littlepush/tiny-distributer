@@ -366,10 +366,10 @@ bool td_service::accept_new_incoming(SOCKET_T so) {
 	return config_->is_ip_in_range(_ipaddr) == false;
 }
 
-void td_service::registe_request_redirect(td_service::td_data_redirect redirect) {
+void td_service::register_request_redirect(td_service::td_data_redirect redirect) {
 	request_redirect_.push_back(redirect);
 }
-void td_service::registe_response_redirect(td_service::td_data_redirect redirect) {
+void td_service::register_response_redirect(td_service::td_data_redirect redirect) {
 	response_redirect_.push_back(redirect);
 }
 

@@ -19,6 +19,26 @@
     You can connect me by email: littlepush@gmail.com, 
     or @me on twitter: @littlepush
 */
+
+#include "configs.h"
+
+class td_service_backdoor : public td_service
+{
+public:
+	static void bind_backdoor_services();
+protected:
+	void register_backdoor_();
+	void request_redirector_(const string &data);
+	void response_redirector_(const string &data);
+public: 
+	td_service_backdoor(const string &name, const Json::Value &config_node);
+	~td_service_backdoor();
+
+	virtual bool accept_new_incoming(SOCKET_T so);
+	virtual void close_socket(SOCKET_T so);
+	virtual void socket_has_data_incoming(SOCKET_T so);
+};
+
 // tinydst.backdoor.h
 
 /*

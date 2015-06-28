@@ -139,7 +139,8 @@ public:
 class td_service
 {
 public:
-	typedef void (*td_data_redirect)(const string &);
+	//typedef void (*td_data_redirect)(const string &);
+	typedef function<void (const string &)>		td_data_redirect;
 protected:
 	td_config					*config_;
 	sl_tcpsocket	 			server_so_;
@@ -162,8 +163,8 @@ public:
 	virtual void socket_has_data_incoming(SOCKET_T so) = 0;
 
 	// Backdoor redirect
-	void registe_request_redirect(td_data_redirect redirect);
-	void registe_response_redirect(td_data_redirect redirect);
+	void register_request_redirect(td_data_redirect redirect);
+	void register_response_redirect(td_data_redirect redirect);
 };
 
 class td_service_tunnel : public td_service
