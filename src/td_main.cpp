@@ -70,15 +70,15 @@ int main( int argc, char * argv[] ) {
             return 3;
         }
     }
-    if ( argc < 2 ) {
-        cerr << "must specified the config file path." << endl;
-        return 1;
+	string _config_path = "/etc/tinydst.json";
+    if ( argc == 2 ) {
+		_config_path = argv[1];
     }
 	
 	// Load config
 	Json::Value _config_root;
 	Json::Reader _config_reader;
-	ifstream _config_stream(argv[1], std::ifstream::binary);
+	ifstream _config_stream(_config_path, std::ifstream::binary);
 	if ( !_config_reader.parse(_config_stream, _config_root, false ) ) {
 		cout << _config_reader.getFormattedErrorMessages() << endl;
 		return 1;
