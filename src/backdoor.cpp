@@ -95,7 +95,11 @@ void td_service_backdoor::socket_has_data_incoming(SOCKET_T so) {
 	sl_tcpsocket _wso(so);
 	string _buffer;
 	_wso.read_data(_buffer);
-	// do nothing
+
+	SOCKETSTATUE _st = socket_check_status(so, SO_CHECK_READ);
+	if ( _st == SO_INVALIDATE ) {
+		this->close_socket(so);
+	}
 }
 
 // tinydst.backdoor.cpp
