@@ -32,6 +32,7 @@
 #include <vector>
 #include <fstream>
 #include <memory>
+#include <algorithm>
 
 #include <stdio.h>
 #include <stdlib.h>
