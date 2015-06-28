@@ -417,6 +417,18 @@ void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
 				_rd(_buf);
 			}
 		}
+	} else {
+		// Read EOF or connection has been dropped.
+		this->close_socket(so);
+	}
+
+	SOCKETSTATUE _st = socket_check_status(so, SO_CHECK_READ);
+	if ( _st == SO_INVALIDATE ) {
+		this->close_socket(so);
+	}
+	_st = socket_check_status(_wrapdso.m_socket, SO_CHECK_READ);
+	if ( _st == SO_INVALIDATE ) {
+		this->close_socket(_wrapdso.m_socket);
 	}
 }
 

@@ -33,15 +33,19 @@ void tiny_distributer_worker( ) {
 	vector<sl_event> _event_list;
 	// Loop to get all events
 	while ( this_thread_is_running() ) {
+		_event_list.clear();
 		sl_poller::server().fetch_events(_event_list);
 		for ( auto &_event : _event_list ) {
 			if ( _event.event == SL_EVENT_FAILED ) {
+				cout << "get failed event" << endl;
 				shared_ptr<td_service> _psvr = service_by_maintaining_socket(_event.so);
 				if ( _psvr != nullptr ) _psvr->close_socket(_event.so);
 			} else if ( _event.event == SL_EVENT_ACCEPT ) {
+				cout << "get accept event" << endl;
 				shared_ptr<td_service> _psvr = service_by_socket(_event.source);
 				if ( _psvr != nullptr ) _psvr->accept_new_incoming(_event.so);
 			} else {
+				cout << "get data event" << endl;
 				shared_ptr<td_service> _psvr = service_by_maintaining_socket(_event.so);
 				if ( _psvr != nullptr ) _psvr->socket_has_data_incoming(_event.so);
 			}
@@ -69,7 +73,6 @@ int main( int argc, char * argv[] ) {
             return 3;
         }
     }
-
     if ( argc < 2 ) {
         cerr << "must specified the config file path." << endl;
         return 1;

@@ -43,6 +43,7 @@ bool td_service_redirect::accept_new_incoming(SOCKET_T so) {
 			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
 		}
 		if ( _wrap_dst.connect(_dst.ipaddr, _dst.port) ) break;
+		_wrap_dst.close();
 	}
 
 	if ( SOCKET_NOT_VALIDATE(_wrap_dst.m_socket) ) {
