@@ -236,7 +236,7 @@ public:
     virtual bool set_reusable( bool reusable = true ) = 0;
 
     // Read data from the socket until timeout or get any data.
-    virtual bool read_data( string &buffer, u_int32_t timeout = 1000 ) = 0;
+    virtual bool read_data( string &buffer, u_int32_t timeout = 1000, SOCKETSTATUE *pst = NULL ) = 0;
     // Write data to peer.
     virtual bool write_data( const string &data ) = 0;
 };
@@ -526,7 +526,7 @@ public:
     bool set_keepalive( bool keepalive = true );
 
     // Read data from the socket until timeout or get any data.
-    virtual bool read_data( string &buffer, u_int32_t timeout = 1000 );
+    virtual bool read_data( string &buffer, u_int32_t timeout = 1000, SOCKETSTATUE *pst = NULL );
     // Write data to peer.
     virtual bool write_data( const string &data );
 };
@@ -569,7 +569,7 @@ public:
     virtual bool set_reusable( bool reusable = true );
 
     // Read data from the socket until timeout or get any data.
-    virtual bool read_data( string &buffer, u_int32_t timeout = 1000 );
+    virtual bool read_data( string &buffer, u_int32_t timeout = 1000, SOCKETSTATUE *pst = NULL );
     // Write data to peer.
     virtual bool write_data( const string &data );
 };
