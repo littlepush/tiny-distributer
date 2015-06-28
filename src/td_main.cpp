@@ -99,30 +99,35 @@ int main( int argc, char * argv[] ) {
 			return 3;
 		}
 		// Try to create services
+		td_service *_service = NULL;
 		if ( _type == td_config::td_server_tcprelay ) {
-			td_service_tcprelay *_service = new td_service_tcprelay(_server_name, _config_node);
-			registe_new_service(shared_ptr<td_service>(_service));
+			_service = new td_service_tcprelay(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_redirect ) {
-			td_config_redirect _config(_server_name, _config_node);
-			cout << _server_name << " is " << _server_type_name << 
-				", listen on: " << _config.server_port() << endl;
+			_service = new td_service_redirect(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_socks5 ) {
-			td_config_socks5 _config(_server_name, _config_node);
-			cout << _server_name << " is " << _server_type_name << 
-				", listen on: " << _config.server_port() << endl;
+			_service = new td_service_socks5(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_backdoor ) {
-			td_config_backdoor _config(_server_name, _config_node);
-			cout << _server_name << " is " << _server_type_name << 
-				", listen on: " << _config.server_port() << endl;
+			_service = new td_service_backdoor(_server_name, _config_node);
+		}
+
+		if ( _service != NULL ) {
+			registe_new_service(shared_ptr<td_service>(_service));
 		}
 	}
+
+	// Bind all backdoor service.
+	td_service_backdoor::bind_backdoor_services();
 
 	// Hang current process
 	set_signal_handler();
 
+	// create the main loop thread
+	thread _main_loop(tiny_distributer_worker);
+
 	// Wait for kill signal
 	wait_for_exit_signal();
 	join_all_threads();
+	_main_loop.join();
 
     return 0;
 }
