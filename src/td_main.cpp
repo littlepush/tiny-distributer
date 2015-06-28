@@ -50,7 +50,6 @@ void tiny_distributer_worker( ) {
 }
 
 int main( int argc, char * argv[] ) {
-
     if ( argc < 3 ) {
         pid_t _pid = fork();
         if ( _pid < 0 ) {
