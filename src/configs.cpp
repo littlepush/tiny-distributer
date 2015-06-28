@@ -104,7 +104,7 @@ static td_iprange g_string_to_range(const string &rangestring) {
 	string _ipstr = _com[0];
 	vector<string> _ipcom;
 	split_string(_ipstr, ".", _ipcom);
-	for ( int i = 0; i < (_ipcom.size() - 4); ++i ) {
+	for ( int i = 0; i < (int)(_ipcom.size() - 4); ++i ) {
 		_ipcom.push_back("0");
 	}
 	uint32_t _ipaddr = 0;
