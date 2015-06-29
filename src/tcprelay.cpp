@@ -25,6 +25,7 @@
 td_service_tcprelay::td_service_tcprelay(const string &name, const Json::Value &config_node)
 {
 	config_ = new td_config_tcprelay(name, config_node);
+	this->_initialize_thread_pool();
 }
 td_service_tcprelay::~td_service_tcprelay() {
 	delete config_;

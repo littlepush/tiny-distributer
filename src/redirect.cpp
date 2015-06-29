@@ -24,6 +24,7 @@
 
 td_service_redirect::td_service_redirect(const string &name, const Json::Value &config_node) {
 	config_ = new td_config_redirect(name, config_node);
+	this->_initialize_thread_pool();
 }
 td_service_redirect::~td_service_redirect() {
 	delete config_;

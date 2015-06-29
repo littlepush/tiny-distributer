@@ -24,6 +24,7 @@
 
 td_service_socks5::td_service_socks5(const string &name, const Json::Value &config_node) {
 	config_ = new td_config_socks5(name, config_node);
+	this->_initialize_thread_pool();
 	sl_socks5_set_supported_method(sl_method_noauth);
 	sl_socks5_set_supported_method(sl_method_userpwd);
 }
