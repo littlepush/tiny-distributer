@@ -200,7 +200,7 @@ td_config::td_server td_config::server_type_from_string(const string &typestring
 }
 
 td_config::td_config(const string &name, const Json::Value &config_node)
-: server_name_(name) {
+: server_name_(name), thread_pool_size_(1) {
 	ostringstream _oss;
 	if ( config_node.isMember("server") == false ) {
 		_oss << "missing \"server\" in section " << server_name_;
@@ -239,6 +239,10 @@ td_config::td_config(const string &name, const Json::Value &config_node)
 			}
 		}
 	}
+	// Thread Pool Size
+	if ( config_node.isMember("threads") == true ) {
+		thread_pool_size_ = config_node["threads"].asUInt();
+	}
 }
 td_config::~td_config() {
 	// nothing
@@ -247,6 +251,7 @@ td_config::~td_config() {
 const string &td_config::server_name() const { return server_name_; }
 uint32_t td_config::local_ip() const { return local_ip_; }
 uint16_t td_config::server_port() const { return port_; }
+uint32_t td_config::thread_pool_size() const { return thread_pool_size_; }
 bool td_config::is_ip_in_range(uint32_t ip) const {
 	if ( source_range_.size() == 0 ) return true;
 	for ( auto &_range : source_range_ ) {
@@ -338,6 +343,7 @@ bool td_config_backdoor::is_redirect_request() const { return accept_request_; }
 bool td_config_backdoor::is_redirect_response() const { return accept_response_; }
 
 // Service
+td_service::~td_service() { }
 sl_tcpsocket& td_service::server_so() { return server_so_; }
 
 const string& td_service::server_name() const {
@@ -372,6 +378,21 @@ void td_service::register_request_redirect(td_service::td_data_redirect redirect
 void td_service::register_response_redirect(td_service::td_data_redirect redirect) {
 	response_redirect_.push_back(redirect);
 }
+
+// Tunnel Service
+
+void td_service_tunnel::_initialize_thread_pool() {
+	for ( uint32_t i = 0; i < config_->thread_pool_size(); ++i ) {
+		workers_.emplace_back(
+				[this](){
+					//while ( !this->_stop() ) {
+					//	
+					//}
+				}
+			);
+	}
+}
+td_service_tunnel::~td_service_tunnel() {}
 
 void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
 	request_so_[src] = true;

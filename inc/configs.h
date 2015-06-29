@@ -43,6 +43,8 @@
 #include "json/json-forwards.h"
 #include "socklite/socketlite.h"
 
+#include "thread.h"
+
 using namespace std;
 
 typedef pair<string, uint16_t>		td_peerinfo;
@@ -75,7 +77,7 @@ protected:
 	uint32_t					local_ip_;
 	uint16_t					port_;
 	vector<td_iprange>			source_range_;
-
+	uint32_t					thread_pool_size_;
 public:
 	static td_server server_type_from_string(const string &typestring);
 public:
@@ -85,6 +87,7 @@ public:
 	const string &server_name() const;
 	uint32_t local_ip() const;
 	uint16_t server_port() const;
+	uint32_t thread_pool_size() const;
 	bool is_ip_in_range(uint32_t ip) const;
 };
 
@@ -151,6 +154,10 @@ protected:
 	vector<td_data_redirect>	request_redirect_;
 	vector<td_data_redirect>	response_redirect_;
 public:
+	// Support virtual destructure
+	virtual ~td_service();
+
+	// Get the server socket
 	sl_tcpsocket& server_so();
 
 	// Get the server's name
@@ -173,10 +180,19 @@ class td_service_tunnel : public td_service
 {
 protected:
 	map<SOCKET_T, SOCKET_T>		so_map_;
+	vector< thread > 			workers_;
+	event_pool<SOCKET_T>		pool_;
 
+	void _initialize_thread_pool();
 	void _did_accept_sockets(SOCKET_T src, SOCKET_T dst);
 public:
+
+	// Virtual destructure
+	virtual ~td_service_tunnel();
+
+	// On socket been closed
 	virtual void close_socket(SOCKET_T so);
+	// Has new data coming
 	virtual void socket_has_data_incoming(SOCKET_T so);
 };
 

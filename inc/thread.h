@@ -22,6 +22,9 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
+#include <queue>
+#include <functional>
 
 using namespace std;
 
@@ -40,6 +43,61 @@ void join_all_threads();
 
 // Check this thread's status
 bool this_thread_is_running();
+
+template < class Item > class event_pool
+{
+public:
+	typedef function<void(Item&&)>	get_event_t;
+protected:
+	mutex					mutex_;
+	condition_variable		cv_;
+	queue<Item>				pool_;
+
+public:
+
+	bool wait( get_event_t get_event ) {
+		unique_lock<mutex> _l(mutex_);
+		cv_.wait(_l, [this](){ return pool_.size() > 0; });
+		Item&& _item = move(pool_.front());
+		pool_.pop();
+		get_event(_item);
+		return true;
+	}
+
+	template< class Rep, class Period >
+	bool wait_for(const chrono::duration<Rep, Period>& rel_time, get_event_t get_event) {
+		unique_lock<mutex> _l(mutex_);
+		bool _result = cv_.wait_for(_l, rel_time, [this](){ return pool_.size() > 0; });
+		if ( _result == true ) {
+			Item&& _item = move(pool_.front());
+			pool_.pop();
+			get_event(_item);
+		}
+		return _result;
+	}
+
+	template< class Clock, class Duration >
+	bool wait_until(const chrono::time_point<Clock, Duration>& timeout_time, get_event_t get_event) {
+		unique_lock<mutex> _l(mutex_);
+		bool _result = cv_.wait_until(_l, timeout_time, [this](){ return pool_.size() > 0; });
+		if ( _result == true ) {
+			Item&& _item = move(pool_.front());
+			pool_.pop();
+			get_event(_item);
+		}
+		return _result;
+	}
+
+	void notify_one(Item&& item) {
+		unique_lock<mutex> _l(mutex_);
+		pool_.emplace(item);
+	};
+
+	void clear() {
+		unique_lock<mutex> _l(mutex_);
+		pool_.clear();
+	}
+};
 
 // tinydst.thread.h
 
