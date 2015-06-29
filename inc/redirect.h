@@ -25,7 +25,7 @@
 #ifndef __TINY_DISTRIBUTER_REDIRECT_H__
 #define __TINY_DISTRIBUTER_REDIRECT_H__
 
-#include "configs.h"
+#include "services.h"
 
 class td_service_redirect : public td_service_tunnel
 {

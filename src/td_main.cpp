@@ -110,7 +110,7 @@ int main( int argc, char * argv[] ) {
 		}
 
 		if ( _service != NULL ) {
-			registe_new_service(shared_ptr<td_service>(_service));
+			register_new_service(shared_ptr<td_service>(_service));
 		}
 	}
 

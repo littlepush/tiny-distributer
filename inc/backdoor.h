@@ -25,7 +25,7 @@
 #ifndef __TINY_DISTRIBUTER_BACKDOOR_H__
 #define __TINY_DISTRIBUTER_BACKDOOR_H__
 
-#include "configs.h"
+#include "services.h"
 
 class td_service_backdoor : public td_service
 {
