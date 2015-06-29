@@ -20,6 +20,11 @@
     or @me on twitter: @littlepush
 */
 
+#pragma once
+
+#ifndef __TINY_DISTRIBUTER_BACKDOOR_H__
+#define __TINY_DISTRIBUTER_BACKDOOR_H__
+
 #include "configs.h"
 
 class td_service_backdoor : public td_service
@@ -39,7 +44,7 @@ public:
 	virtual void socket_has_data_incoming(SOCKET_T so);
 };
 
-// tinydst.backdoor.h
+#endif // tinydst.backdoor.h
 
 /*
  Push Chen.

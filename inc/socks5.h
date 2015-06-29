@@ -20,6 +20,11 @@
     or @me on twitter: @littlepush
 */
 
+#pragma once
+
+#ifndef __TINY_DISTRIBUTER_SOCKS5_H__
+#define __TINY_DISTRIBUTER_SOCKS5_H__
+
 #include "configs.h"
 
 class td_service_socks5 : public td_service_tunnel
@@ -31,7 +36,7 @@ public:
 	virtual bool accept_new_incoming(SOCKET_T so);
 };
 
-// tinydst.socks5.h
+#endif // tinydst.socks5.h
 
 /*
  Push Chen.

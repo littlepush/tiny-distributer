@@ -20,6 +20,11 @@
     or @me on twitter: @littlepush
 */
 
+#pragma once
+
+#ifndef __TINY_DISTRIBUTER_THREAD_H__
+#define __TINY_DISTRIBUTER_THREAD_H__
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -98,6 +103,8 @@ public:
 		pool_.clear();
 	}
 };
+
+#endif
 
 // tinydst.thread.h
 

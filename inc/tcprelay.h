@@ -20,6 +20,11 @@
     or @me on twitter: @littlepush
 */
 
+#pragma once
+
+#ifndef __TINY_DISTRIBUTER_TCPRELAY_H__
+#define __TINY_DISTRIBUTER_TCPRELAY_H__
+
 #include "configs.h"
 
 class td_service_tcprelay : public td_service_tunnel
@@ -31,7 +36,7 @@ public:
 	virtual bool accept_new_incoming(SOCKET_T so);
 };
 
-// tinydst.tcprelay.h
+#endif // tinydst.tcprelay.h
 
 /*
  Push Chen.
