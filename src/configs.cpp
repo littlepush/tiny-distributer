@@ -343,7 +343,15 @@ bool td_config_backdoor::is_redirect_request() const { return accept_request_; }
 bool td_config_backdoor::is_redirect_response() const { return accept_response_; }
 
 // Service
-td_service::~td_service() { }
+td_service::td_service() : service_status_(true) {}
+td_service::~td_service() { 
+	unique_lock<mutex> _l(status_lock_);
+	service_status_ = false;
+}
+bool td_service::_isrunning() {
+	unique_lock<mutex> _l(status_lock_);
+	return service_status_;
+}
 sl_tcpsocket& td_service::server_so() { return server_so_; }
 
 const string& td_service::server_name() const {
@@ -380,16 +388,20 @@ void td_service::register_response_redirect(td_service::td_data_redirect redirec
 }
 
 // Tunnel Service
-
 void td_service_tunnel::_initialize_thread_pool() {
 	for ( uint32_t i = 0; i < config_->thread_pool_size(); ++i ) {
 		workers_.emplace_back(
-				[this](){
-					//while ( !this->_stop() ) {
-					//	
-					//}
+			[this](){
+				while ( this->_isrunning() ) {
+					SOCKET_T _so;
+					bool _status = pool_.wait_for(chrono::milliseconds(1000), [&](SOCKET_T && rv) {
+						_so = rv;
+					});
+					if ( _status == false ) continue;
+					this->_read_incoming_data(move(_so));
 				}
-			);
+			}
+		);
 	}
 }
 td_service_tunnel::~td_service_tunnel() {}
@@ -417,12 +429,19 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 }
 
 void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
+	// Enqueue the event
+	pool_.notify_one(move(so));
+}
+
+void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	sl_tcpsocket _wrapso(so);
 	auto _peer = so_map_.find(so);
 	sl_tcpsocket _wrapdso(_peer->second);
 	string _buf;
-	SOCKETSTATUE _st;
-	if ( _wrapso.read_data(_buf, 1000, &_st) ) {
+	SOCKETSTATUE _st = SO_INVALIDATE;
+
+	while ( _wrapso.read_data(_buf, 1000, &_st) ) {
+		if ( _buf.size() == 0 && _st == SO_IDLE ) break;
 		_wrapdso.write_data(_buf);
 
 		if ( request_so_.find(so) != request_so_.end() ) {
@@ -439,12 +458,12 @@ void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
 				_rd(_buf);
 			}
 		}
+
 		if ( _st == SO_INVALIDATE ) {
 			this->close_socket(so);
+		} else if ( _st == SO_IDLE ) {
+			break;
 		}
-	} else {
-		// Read EOF or connection has been dropped.
-		this->close_socket(so);
 	}
 }
 

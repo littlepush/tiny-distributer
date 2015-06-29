@@ -63,9 +63,8 @@ public:
 	bool wait( get_event_t get_event ) {
 		unique_lock<mutex> _l(mutex_);
 		cv_.wait(_l, [this](){ return pool_.size() > 0; });
-		Item&& _item = move(pool_.front());
+		get_event(move(pool_.front()));
 		pool_.pop();
-		get_event(_item);
 		return true;
 	}
 
@@ -74,9 +73,8 @@ public:
 		unique_lock<mutex> _l(mutex_);
 		bool _result = cv_.wait_for(_l, rel_time, [this](){ return pool_.size() > 0; });
 		if ( _result == true ) {
-			Item&& _item = move(pool_.front());
+			get_event(move(pool_.front()));
 			pool_.pop();
-			get_event(_item);
 		}
 		return _result;
 	}
@@ -86,9 +84,8 @@ public:
 		unique_lock<mutex> _l(mutex_);
 		bool _result = cv_.wait_until(_l, timeout_time, [this](){ return pool_.size() > 0; });
 		if ( _result == true ) {
-			Item&& _item = move(pool_.front());
+			get_event(move(pool_.front()));
 			pool_.pop();
-			get_event(_item);
 		}
 		return _result;
 	}

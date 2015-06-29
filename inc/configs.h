@@ -153,7 +153,13 @@ protected:
 	map<SOCKET_T, bool> 		tunnel_so_;
 	vector<td_data_redirect>	request_redirect_;
 	vector<td_data_redirect>	response_redirect_;
+
+	mutex						status_lock_;
+	bool						service_status_;
+	// Check if service is running.
+	bool _isrunning();
 public:
+	td_service();
 	// Support virtual destructure
 	virtual ~td_service();
 
@@ -185,6 +191,7 @@ protected:
 
 	void _initialize_thread_pool();
 	void _did_accept_sockets(SOCKET_T src, SOCKET_T dst);
+	void _read_incoming_data(SOCKET_T&& so);
 public:
 
 	// Virtual destructure
