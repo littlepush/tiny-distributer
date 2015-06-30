@@ -126,10 +126,12 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	auto _peer = so_map_.find(so);
 	sl_tcpsocket _wrapdso(_peer->second);
 	string _buf;
-	SOCKETSTATUE _st = SO_INVALIDATE;
+	SO_READ_STATUE _st;
 
-	while ( _wrapso.read_data(_buf, 1000, &_st) ) {
-		if ( _buf.size() == 0 && _st == SO_IDLE ) break;
+	while ( true ) {
+		_st = _wrapso.read_data(_buf, 1000);
+		// If no data
+		if ( (_st & SO_READ_DONE) == 0 ) break;
 		_wrapdso.write_data(_buf);
 
 		if ( request_so_.find(so) != request_so_.end() ) {
@@ -147,11 +149,11 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 			}
 		}
 
-		if ( _st == SO_INVALIDATE ) {
-			this->close_socket(so);
-		} else if ( _st == SO_IDLE ) {
-			break;
-		}
+		// Which means unfinished
+		if ( _st & SO_READ_TIMEOUT ) continue;
+	}
+	if ( _st & SO_READ_CLOSE ) {
+		this->close_socket(so);
 	}
 }
 

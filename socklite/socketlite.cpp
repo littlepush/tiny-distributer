@@ -688,9 +688,9 @@ bool sl_tcpsocket::set_keepalive( bool keepalive )
 }
 
 // Read data from the socket until timeout or get any data.
-bool sl_tcpsocket::read_data( string &buffer, u_int32_t timeout, SOCKETSTATUE *pst )
+SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, u_int32_t timeout)
 {
-    if ( SOCKET_NOT_VALIDATE(m_socket) ) return false;
+    if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
 
     buffer = "";
     struct timeval _tv = { (long)timeout / 1000, 
@@ -701,7 +701,7 @@ bool sl_tcpsocket::read_data( string &buffer, u_int32_t timeout, SOCKETSTATUE *p
 
     // Buffer
     char _buffer[512] = { 0 };
-    int _idleLoopCount = 5;
+	SO_READ_STATUE _st = SO_READ_WAITING;
 
     do {
         // Wait for the incoming
@@ -711,53 +711,27 @@ bool sl_tcpsocket::read_data( string &buffer, u_int32_t timeout, SOCKETSTATUE *p
         } while ( _retCode < 0 && errno == EINTR );
 
         if ( _retCode < 0 ) // Error
-		{
-			if ( pst != NULL ) *pst = SO_INVALIDATE;
-            return false;
-		}
-        if ( _retCode == 0 )    // TimeOut
-		{
-			if ( pst != NULL ) *pst = SO_IDLE;
-            return true;
-		}
+            return (SO_READ_STATUE)(_st | SO_READ_CLOSE);
+        if ( _retCode == 0 )// TimeOut
+            return (SO_READ_STATUE)(_st | SO_READ_TIMEOUT);
 
         // Get data from the socket cache
         _retCode = ::recv( m_socket, _buffer, 512, 0 );
         // Error happen when read data, means the socket has become invalidate
-        if ( _retCode < 0 ) {
-			if ( pst != NULL ) *pst = SO_INVALIDATE;
-			return false;
+		// Or receive EOF, which should close the socket
+        if ( _retCode <= 0 ) {
+			return (SO_READ_STATUE)(_st | SO_READ_CLOSE);
 		}
-        if ( _retCode == 0 ) {
-			if ( pst != NULL ) *pst = SO_IDLE;
-			break; // Get EOF
-		}
+		_st = SO_READ_DONE;
         buffer.append( _buffer, _retCode );
 
-        do {
-            // Check if the socket has more data to read
-            SOCKETSTATUE _status = socket_check_status(m_socket, SO_CHECK_READ);
-			if ( pst != NULL ) *pst = _status;
-            // Socket become invalidate
-            if (_status == SO_INVALIDATE) 
-            {
-                if ( buffer.size() > 0 ) return true;
-                return false;
-            }
-            // Socket become idle, and already read some data, means the peer finish sending one
-            // package. We return the buffer and make the up-level to process the package.
-            //PDUMP(_idleLoopCount);
-            if (_status == SO_IDLE) {
-                //PDUMP( _idleLoopCount );
-				if ( buffer.size() > 0 ) return true;
-                if ( _idleLoopCount > 0 ) _idleLoopCount -= 1;
-                else return true;
-            } else break;
-        } while ( _idleLoopCount > 0 );
+		// If current buffer is not full, means current package just 
+		// end with _retCode bytes, so break current loop
+		if ( _retCode < 512 ) break;
     } while ( true );
 
     // Useless
-    return true;
+    return _st;
 }
 // Write data to peer.
 bool sl_tcpsocket::write_data( const string &data )
@@ -902,14 +876,14 @@ bool sl_udpsocket::set_reusable( bool reusable )
 }
 
 // Read data from the socket until timeout or get any data.
-bool sl_udpsocket::read_data( string &buffer, u_int32_t timeout, SOCKETSTATUE *pst )
+SO_READ_STATUE sl_udpsocket::read_data( string &buffer, u_int32_t timeout )
 {
-    if ( SOCKET_NOT_VALIDATE(m_socket) ) return false;
+    if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
 
     // Set the receive time out
     struct timeval _tv = { (int)timeout / 1000, (int)timeout % 1000 * 1000 };
     if ( setsockopt( m_socket, SOL_SOCKET, SO_RCVTIMEO, &_tv, sizeof(_tv) ) == -1)
-        return false;
+        return SO_READ_CLOSE;
 
     buffer = "";
     int _data_len = 0;
@@ -925,7 +899,7 @@ bool sl_udpsocket::read_data( string &buffer, u_int32_t timeout, SOCKETSTATUE *p
         break;
     } while( true );
 
-    return (_data_len >= 0);
+    return (_data_len >= 0) ? SO_READ_DONE : SO_READ_TIMEOUT;
 }
 // Write data to peer.
 bool sl_udpsocket::write_data( const string &data )
@@ -988,7 +962,7 @@ sl_methods sl_socks5_handshake_handler(SOCKET_T so) {
 	string _buffer;
 
 	// Try to read the handshake package
-	if ( _wsrc.read_data(_buffer) == false ) return sl_method_nomethod;
+	if ( (_wsrc.read_data(_buffer) & SO_READ_DONE) == 0 ) return sl_method_nomethod;
 	sl_socks5_handshake_request *_req = (sl_socks5_handshake_request *)_buffer.data();
 	sl_socks5_handshake_response _resp(sl_method_nomethod);
 
@@ -1016,7 +990,7 @@ bool sl_socks5_auth_by_username(SOCKET_T so, sl_auth_method auth) {
 	sl_tcpsocket _wsrc(so);
 	string _buffer;
 
-	if ( _wsrc.read_data(_buffer) == false ) return false;
+	if ( (_wsrc.read_data(_buffer) & SO_READ_DONE) == 0 ) return false;
 	if ( _buffer.data()[0] != 1 ) return false;		// version error
 
 	const char *_b = _buffer.data() + 1;
@@ -1039,7 +1013,7 @@ bool sl_socks5_get_connect_info(SOCKET_T so, string &addr, uint16_t& port) {
 	sl_tcpsocket _wsrc(so);
 	string _buffer;
 
-	if ( _wsrc.read_data(_buffer) == false ) return false;
+	if ( (_wsrc.read_data(_buffer) & SO_READ_DONE) == 0 ) return false;
 	sl_socks5_connect_request *_req = (sl_socks5_connect_request *)_buffer.data();
 	sl_socks5_ipv4_response _resp(0, 0);
 

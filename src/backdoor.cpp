@@ -94,9 +94,8 @@ void td_service_backdoor::close_socket(SOCKET_T so) {
 void td_service_backdoor::socket_has_data_incoming(SOCKET_T so) {
 	sl_tcpsocket _wso(so);
 	string _buffer;
-	SOCKETSTATUE _st;
-	_wso.read_data(_buffer, 1000, &_st);
-	if ( _st == SO_INVALIDATE ) {
+	SO_READ_STATUE _st = _wso.read_data(_buffer, 1000);
+	if ( _st & SO_READ_CLOSE ) {
 		this->close_socket(so);
 	}
 }
