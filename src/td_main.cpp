@@ -101,7 +101,7 @@ int main( int argc, char * argv[] ) {
 
 	Json::Value &_service_node = _config_root["services"];
 
-	for ( auto _it = _config_root.begin(); _it != _service_node.end(); ++_it ) {
+	for ( auto _it = _service_node.begin(); _it != _service_node.end(); ++_it ) {
 		string _server_name = _it.key().asString();
 		Json::Value _config_node = _service_node[_server_name];
 		string _server_type_name = _config_node["server"].asString();
