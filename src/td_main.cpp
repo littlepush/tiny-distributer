@@ -51,7 +51,35 @@ void tiny_distributer_worker( ) {
 }
 
 int main( int argc, char * argv[] ) {
-    if ( argc < 3 ) {
+
+	// Parse the parameters
+	// Todo...
+
+	string _config_path = "/etc/tinydst.json";
+    if ( argc == 2 ) {
+		_config_path = argv[1];
+    }
+	
+	// Load config
+	Json::Value _config_root;
+	Json::Reader _config_reader;
+	ifstream _config_stream(_config_path, std::ifstream::binary);
+	if ( !_config_reader.parse(_config_stream, _config_root, false ) ) {
+		cout << _config_reader.getFormattedErrorMessages() << endl;
+		return 1;
+	}
+
+	bool _daemon = true;
+	if ( _config_root.isMember("daemon") ) {
+		_daemon = _config_root["daemon"].asBool();
+	}
+
+	if ( _config_root.isMember("services") == false ) {
+		cerr << "No services configuration" << endl;
+		return 1;
+	}
+
+    if ( _daemon ) {
         pid_t _pid = fork();
         if ( _pid < 0 ) {
             cerr << "Failed to create child process." << endl;
@@ -70,23 +98,12 @@ int main( int argc, char * argv[] ) {
             return 3;
         }
     }
-	string _config_path = "/etc/tinydst.json";
-    if ( argc == 2 ) {
-		_config_path = argv[1];
-    }
-	
-	// Load config
-	Json::Value _config_root;
-	Json::Reader _config_reader;
-	ifstream _config_stream(_config_path, std::ifstream::binary);
-	if ( !_config_reader.parse(_config_stream, _config_root, false ) ) {
-		cout << _config_reader.getFormattedErrorMessages() << endl;
-		return 1;
-	}
 
-	for ( auto _it = _config_root.begin(); _it != _config_root.end(); ++_it ) {
+	Json::Value &_service_node = _config_root["services"];
+
+	for ( auto _it = _config_root.begin(); _it != _service_node.end(); ++_it ) {
 		string _server_name = _it.key().asString();
-		Json::Value _config_node = _config_root[_server_name];
+		Json::Value _config_node = _service_node[_server_name];
 		string _server_type_name = _config_node["server"].asString();
 		if ( _server_type_name.size() == 0 ) {
 			cout << "no server type in config " << _server_name << endl;
