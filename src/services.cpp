@@ -69,6 +69,7 @@ void td_service::register_response_redirect(td_service::td_data_redirect redirec
 }
 
 // Tunnel Service
+#ifdef USE_THREAD_SERVICE
 bool td_service_tunnel::_isrunning() {
 	unique_lock<mutex> _l(status_lock_);
 	return service_status_;
@@ -90,7 +91,9 @@ void td_service_tunnel::_initialize_thread_pool() {
 		);
 	}
 }
+#endif
 td_service_tunnel::~td_service_tunnel() {
+#ifdef USE_THREAD_SERVICE
 	{
 		unique_lock<mutex> _l(status_lock_);
 		service_status_ = false;
@@ -98,6 +101,7 @@ td_service_tunnel::~td_service_tunnel() {
 	for ( auto & _wt : workers_ ) {
 		_wt.join();
 	}
+#endif
 }
 
 void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
@@ -124,7 +128,11 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 
 void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
 	// Enqueue the event
+#ifdef USE_THREAD_SERVICE
 	pool_.notify_one(move(so));
+#else
+	this->_read_incoming_data(move(so));
+#endif
 }
 
 void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
@@ -134,7 +142,11 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	string _buf;
 	SO_READ_STATUE _st;
 
+#ifdef USE_THREAD_SERVICE
 	while ( this->_isrunning() ) {
+#else
+	while ( true ) {
+#endif
 		_st = _wrapso.read_data(_buf, 1000);
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;
