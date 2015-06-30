@@ -26,6 +26,12 @@
 td_service::td_service() {}
 td_service::~td_service() { 
 	server_so_.close();
+	for ( auto &_soit : request_so_ ) {
+		close(_soit.first);
+	}
+	for ( auto &_soit : tunnel_so_ ) {
+		close(_soit.first);
+	}
 }
 sl_tcpsocket& td_service::server_so() { return server_so_; }
 
@@ -89,7 +95,7 @@ td_service_tunnel::~td_service_tunnel() {
 		unique_lock<mutex> _l(status_lock_);
 		service_status_ = false;
 	}
-	for ( auto && _wt : workers_ ) {
+	for ( auto & _wt : workers_ ) {
 		_wt.join();
 	}
 }
@@ -128,7 +134,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	string _buf;
 	SO_READ_STATUE _st;
 
-	while ( true ) {
+	while ( this->_isrunning() ) {
 		_st = _wrapso.read_data(_buf, 1000);
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;
@@ -151,6 +157,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 
 		// Which means unfinished
 		if ( _st & SO_READ_TIMEOUT ) continue;
+		break;
 	}
 	if ( _st & SO_READ_CLOSE ) {
 		this->close_socket(so);
