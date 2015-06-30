@@ -143,7 +143,9 @@ int main( int argc, char * argv[] ) {
 	// Wait for kill signal
 	wait_for_exit_signal();
 	join_all_threads();
+
 	_main_loop.join();
+	stop_all_services();
 
     return 0;
 }

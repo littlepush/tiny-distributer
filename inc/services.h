@@ -94,6 +94,9 @@ public:
 // registed services.
 bool register_new_service(shared_ptr<td_service> service);
 
+// Stop all running services
+void stop_all_services();
+
 // Get the service which its server socket is equal to so
 shared_ptr<td_service> service_by_socket(SOCKET_T so);
 

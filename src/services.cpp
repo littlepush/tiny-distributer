@@ -173,6 +173,9 @@ bool register_new_service(shared_ptr<td_service> service) {
 	g_service_list().push_back(service);
 	return true;
 }
+void stop_all_services( ) {
+	g_service_list().clear();
+}
 shared_ptr<td_service> service_by_socket(SOCKET_T so) {
 	for ( auto &_ptr : g_service_list() ) {
 		if ( _ptr->server_so().m_socket == so ) return _ptr;
