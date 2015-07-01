@@ -22,6 +22,7 @@
 
 #include "configs.h"
 #include "thread.h"
+#include "log.h"
 #include "tcprelay.h"
 #include "redirect.h"
 #include "socks5.h"
@@ -99,6 +100,44 @@ int main( int argc, char * argv[] ) {
         }
     }
 
+	string _logpath = "syslog";
+	if ( _config_root.isMember("logpath") ) {
+		_logpath = _config_root["logpath"].asString();
+	}
+	string _loglv = "info";
+	if ( _config_root.isMember("loglevel") ) {
+		_loglv = _config_root["loglevel"].asString();
+	}
+
+	td_log_level _lv = log_info;
+	if ( _loglv == "emergancy" ) {
+		_lv = log_emergancy;
+	} else if ( _loglv == "alert" ) {
+		_lv = log_alert;
+	} else if ( _loglv == "critical" ) {
+		_lv = log_critical;
+	} else if ( _loglv == "error" ) {
+		_lv = log_error;
+	} else if ( _loglv == "warning" ) {
+		_lv = log_warning;
+	} else if ( _loglv == "notice" ) {
+		_lv = log_notice;
+	} else if ( _loglv == "info" ) {
+		_lv = log_info;
+	} else if ( _loglv == "debug" ) {
+		_lv = log_debug;
+	}
+
+	if ( _logpath == "syslog" ) {
+		td_log_start(_lv);
+	} else if ( _logpath == "stdout" ) {
+		td_log_start(stdout, _lv);
+	} else if ( _logpath == "stderr" ) {
+		td_log_start(stderr, _lv);
+	} else {
+		td_log_start(_logpath, _lv);
+	}
+
 	Json::Value &_service_node = _config_root["services"];
 
 	for ( auto _it = _service_node.begin(); _it != _service_node.end(); ++_it ) {
@@ -106,12 +145,12 @@ int main( int argc, char * argv[] ) {
 		Json::Value _config_node = _service_node[_server_name];
 		string _server_type_name = _config_node["server"].asString();
 		if ( _server_type_name.size() == 0 ) {
-			cout << "no server type in config " << _server_name << endl;
+			td_log(log_critical, "no server type \'%s\' in config", _server_name.c_str());
 			return 2;
 		}
 		td_config::td_server _type = td_config::server_type_from_string(_server_type_name);
 		if ( _type == td_config::td_server_unknow ) {
-			cout << "unknow server type: " << _server_type_name << endl;
+			td_log(log_critical, "unknow server type: \'%s\'", _server_type_name.c_str());
 			return 3;
 		}
 		// Try to create services
@@ -142,10 +181,15 @@ int main( int argc, char * argv[] ) {
 
 	// Wait for kill signal
 	wait_for_exit_signal();
+	td_log(log_info, "tinydst receive terminate signal");
+
 	join_all_threads();
 
 	_main_loop.join();
 	stop_all_services();
+	td_log_stop();
+
+	td_log(log_info, "tinydst terminated");
 
     return 0;
 }

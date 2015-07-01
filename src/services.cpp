@@ -25,6 +25,7 @@
 // Service
 td_service::td_service() {}
 td_service::~td_service() { 
+	td_log(log_debug, "server(%s) is shuting down", this->server_name().c_str());
 	server_so_.close();
 	for ( auto &_soit : request_so_ ) {
 		close(_soit.first);
@@ -51,14 +52,27 @@ bool td_service::start_service() {
 			sl_poller::server().bind_tcp_server(server_so_.m_socket);
 			return true;
 		}
+		td_log(log_error, "server(%s) failed to listen on port %u, retrying...", 
+				this->server_name().c_str(), config_->server_port());
 		sleep(1);
 	}
+	td_log(log_error, "server(%s) failed to listen on port %u, failed to start.", 
+			this->server_name().c_str(), config_->server_port());
 	return false;
 }
 bool td_service::accept_new_incoming(SOCKET_T so) {
 	uint32_t _ipaddr, _port;
 	network_peer_info_from_socket(so, _ipaddr, _port);
-	return config_->is_ip_in_range(_ipaddr);
+	bool _ret = config_->is_ip_in_range(_ipaddr);
+	td_log(log_notice, "server(%s) check incoming[%d.%d.%d.%d:%u]: %s",
+			this->server_name().c_str(),
+			(_ipaddr >> (0 * 8)) & 0x00FF,
+			(_ipaddr >> (1 * 8)) & 0x00FF,
+			(_ipaddr >> (2 * 8)) & 0x00FF,
+			(_ipaddr >> (3 * 8)) & 0x00FF,
+			_port,
+			(_ret ? "accept" : "deny"));
+	return _ret;
 }
 
 void td_service::register_request_redirect(td_service::td_data_redirect redirect) {
@@ -79,6 +93,9 @@ void td_service_tunnel::_initialize_thread_pool() {
 	for ( uint32_t i = 0; i < config_->thread_pool_size(); ++i ) {
 		workers_.emplace_back(
 			[this](){
+				td_log(log_info, "server(%s) start thread %d", 
+						this->server_name().c_str(),
+						this_thread::get_id());
 				while ( this->_isrunning() ) {
 					SOCKET_T _so;
 					bool _status = pool_.wait_for(chrono::milliseconds(100), [&](SOCKET_T && rv) {
@@ -87,6 +104,9 @@ void td_service_tunnel::_initialize_thread_pool() {
 					if ( _status == false ) continue;
 					this->_read_incoming_data(move(_so));
 				}
+				td_log(log_info, "server(%s) stop thread %d", 
+						this->server_name().c_str(), 
+						this_thread::get_id());
 			}
 		);
 	}
@@ -101,20 +121,24 @@ td_service_tunnel::~td_service_tunnel() {
 	for ( auto & _wt : workers_ ) {
 		_wt.join();
 	}
+	td_log(log_info, "server(%s), all worker threads stopped", 
+			this->server_name().c_str());
 #endif
 }
 
 void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
+	td_log(log_debug, "server(%s), did accept incoming so(%d) and relay so(%d)", 
+			this->server_name().c_str(), src, dst);
 	request_so_[src] = true;
 	tunnel_so_[dst] = true;
 	so_map_[src] = dst;
 	so_map_[dst] = src;
 #ifdef USE_THREAD_SERVICE
-	sl_poller::server().monitor_socket(src, true);
-	sl_poller::server().monitor_socket(dst, true);
+	sl_poller::server().monitor_socket(src, true, false);
+	sl_poller::server().monitor_socket(dst, true, false);
 #else
-	sl_poller::server().monitor_socket(src, false);
-	sl_poller::server().monitor_socket(dst, false);
+	sl_poller::server().monitor_socket(src, false, false);
+	sl_poller::server().monitor_socket(dst, false, false);
 #endif
 }
 
@@ -122,6 +146,8 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 	auto _peer = so_map_.find(so);
 	if ( _peer == so_map_.end() ) return;
 	// Close and clear
+	td_log(log_debug, "server(%s) has close socket %d relay with %d", 
+			this->server_name().c_str(), so, _peer->second);
 	close(so);
 	close(_peer->second);
 	request_so_.erase(so);
@@ -133,6 +159,8 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 
 void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
 	// Enqueue the event
+	td_log(log_debug, "server(%s) processing data reading for so: %d", 
+			this->server_name().c_str(), so);
 #ifdef USE_THREAD_SERVICE
 	pool_.notify_one(move(so));
 #else
@@ -147,12 +175,19 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	string _buf;
 	SO_READ_STATUE _st;
 
+	td_log(log_debug, "server(%s) begin to read so: %d", 
+			this->server_name().c_str(), so);
+
 #ifdef USE_THREAD_SERVICE
 	_st = _wrapso.recv(_buf, 1024);
+	td_log(log_debug, "server(%s) did read from so: %d, st: %02x", 
+			this->server_name().c_str(), so, _st);
 	if ( _st & SO_READ_DONE ) {
 #else
 	while ( true ) {
 		_st = _wrapso.read_data(_buf, 1000);
+		td_log(log_debug, "server(%s) did read from so: %d, st: %02x", 
+				this->server_name().c_str(), so, _st);
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;
 #endif
@@ -174,10 +209,18 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 		}
 
 #ifdef USE_THREAD_SERVICE
+		td_log(log_debug, "server(%s) put so(%d) back to poller", 
+				this->server_name().c_str(), so);
 		sl_poller::server().monitor_socket(so, true, true);
 #else
 		// Which means unfinished
-		if ( _st & SO_READ_TIMEOUT ) continue;
+		if ( _st & SO_READ_TIMEOUT ) {
+			td_log(log_debug, "server(%s) read time on so(%s), try more",
+					this->server_name().c_str(), so);
+			continue;
+		}
+		td_log(log_debug, "server(%s) read done on so(%s)", 
+				this->server_name().c_str(), so);
 		break;
 #endif
 	}

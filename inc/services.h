@@ -26,6 +26,7 @@
 #define __TINY_DISTRIBUTER_SERVICES_H__
 
 #include "configs.h"
+#include "log.h"
 
 // Serveice Base Class
 class td_service
