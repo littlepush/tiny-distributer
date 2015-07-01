@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-2-gb7ea466
+// Current Version: 0.4-3-g0522501
 
 #include "socklite/socketlite.h"
 // src/socket.cpp
@@ -693,6 +693,20 @@ SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, u_int32_t timeout)
     // Useless
     return _st;
 }
+
+SO_READ_STATUE sl_tcpsocket::recv( string &buffer, unsigned int max_buffer_len ) {
+	if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
+
+	buffer.resize(max_buffer_len);
+	int _retCode = ::recv(m_socket, &buffer[0], max_buffer_len, 0 );
+	if ( _retCode <= 0 ) {
+		buffer.resize(0);
+		return SO_READ_CLOSE;
+	}
+	buffer.resize(_retCode);
+	return SO_READ_DONE;
+}
+
 // Write data to peer.
 bool sl_tcpsocket::write_data( const string &data )
 {

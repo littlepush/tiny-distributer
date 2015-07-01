@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-2-gb7ea466
+// Current Version: 0.4-3-g0522501
 
 #pragma once
 // inc/socket.h
@@ -248,6 +248,7 @@ public:
 
     // Read data from the socket until timeout or get any data.
     virtual SO_READ_STATUE read_data( string &buffer, u_int32_t timeout = 1000 ) = 0;
+
     // Write data to peer.
     virtual bool write_data( const string &data ) = 0;
 };
@@ -535,6 +536,10 @@ public:
 
     // Read data from the socket until timeout or get any data.
     virtual SO_READ_STATUE read_data( string &buffer, u_int32_t timeout = 1000 );
+
+	// Only try to read data once, the socket must receive SL_EVENT_DATA by the poller
+	SO_READ_STATUE recv(string &buffer, unsigned int max_buffer_len = 512);
+
     // Write data to peer.
     virtual bool write_data( const string &data );
 };

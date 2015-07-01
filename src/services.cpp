@@ -148,13 +148,14 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	SO_READ_STATUE _st;
 
 #ifdef USE_THREAD_SERVICE
-	while ( this->_isrunning() ) {
+	_st = _wrapso.recv(_buf, 1024);
+	if ( _st & SO_READ_DONE ) {
 #else
 	while ( true ) {
-#endif
 		_st = _wrapso.read_data(_buf, 1000);
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;
+#endif
 		_wrapdso.write_data(_buf);
 
 		if ( request_so_.find(so) != request_so_.end() ) {
@@ -172,18 +173,17 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 			}
 		}
 
+#ifdef USE_THREAD_SERVICE
+		sl_poller::server().monitor_socket(so, true, true);
+#else
 		// Which means unfinished
 		if ( _st & SO_READ_TIMEOUT ) continue;
 		break;
+#endif
 	}
 	if ( _st & SO_READ_CLOSE ) {
 		this->close_socket(so);
 	}
-#if USE_THREAD_SERVICE
-	else {
-		sl_poller::server().monitor_socket(so, true, true);
-	}
-#endif
 }
 
 vector<shared_ptr<td_service>> &g_service_list() {
