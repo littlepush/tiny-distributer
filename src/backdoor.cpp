@@ -83,6 +83,7 @@ bool td_service_backdoor::accept_new_incoming(SOCKET_T so) {
 	
 	// We accept all request.
 	request_so_[so] = true;
+	sl_poller::server().monitor_socket(so);
 	return true;
 }
 

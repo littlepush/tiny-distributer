@@ -21,7 +21,7 @@
 TD_ROOT = ./
 OUT_DIR = $(TD_ROOT)/result
 
-TD_DEFINES = -DVERSION=\"$(shell ./version)\" -DTARGET=\"$(shell gcc -v 2> /dev/stdout | grep Target | cut -d ' ' -f 2)\" -I./inc -std=c++11
+TD_DEFINES = -DVERSION=\"$(shell ./version)\" -DTARGET=\"$(shell gcc -v 2> /dev/stdout | grep Target | cut -d ' ' -f 2)\" -I./inc -std=c++11 -DUSE_THREAD_SERVICE
 THIRDPARTY = -I./jsoncpp -I./socklite
 
 ifeq "$(MAKECMDGOALS)" "release"

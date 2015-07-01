@@ -109,8 +109,13 @@ void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
 	tunnel_so_[dst] = true;
 	so_map_[src] = dst;
 	so_map_[dst] = src;
-	sl_poller::server().monitor_socket(src);
-	sl_poller::server().monitor_socket(dst);
+#ifdef USE_THREAD_SERVICE
+	sl_poller::server().monitor_socket(src, true);
+	sl_poller::server().monitor_socket(dst, true);
+#else
+	sl_poller::server().monitor_socket(src, false);
+	sl_poller::server().monitor_socket(dst, false);
+#endif
 }
 
 void td_service_tunnel::close_socket(SOCKET_T so) {
@@ -174,6 +179,11 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	if ( _st & SO_READ_CLOSE ) {
 		this->close_socket(so);
 	}
+#if USE_THREAD_SERVICE
+	else {
+		sl_poller::server().monitor_socket(so, true);
+	}
+#endif
 }
 
 vector<shared_ptr<td_service>> &g_service_list() {

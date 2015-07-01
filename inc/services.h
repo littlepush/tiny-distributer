@@ -71,7 +71,7 @@ protected:
 	vector< thread > 			workers_;
 	event_pool<SOCKET_T>		pool_;
 
-#ifdef USER_THREAD_SERVICE
+#ifdef USE_THREAD_SERVICE
 	mutex						status_lock_;
 	bool						service_status_;
 	// Check if service is running.
