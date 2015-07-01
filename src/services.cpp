@@ -181,7 +181,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	}
 #if USE_THREAD_SERVICE
 	else {
-		sl_poller::server().monitor_socket(so, true);
+		sl_poller::server().monitor_socket(so, true, true);
 	}
 #endif
 }
