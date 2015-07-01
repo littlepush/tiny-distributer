@@ -22,6 +22,7 @@
 
 #include "log.h"
 #include "thread.h"
+#include <cstdarg>
 
 typedef pair<td_log_level, string>	log_item_t;
 static td_log_level g_loglv = log_info;
