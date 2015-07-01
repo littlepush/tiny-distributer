@@ -41,6 +41,9 @@ protected:
 	map<SOCKET_T, bool> 		tunnel_so_;
 	vector<td_data_redirect>	request_redirect_;
 	vector<td_data_redirect>	response_redirect_;
+#ifdef USE_THREAD_SERVICE
+	mutable mutex				service_mutex_;
+#endif
 public:
 	td_service();
 	// Support virtual destructure
@@ -69,10 +72,10 @@ class td_service_tunnel : public td_service
 {
 protected:
 	map<SOCKET_T, SOCKET_T>		so_map_;
-	vector< thread > 			workers_;
 	event_pool<SOCKET_T>		pool_;
 
 #ifdef USE_THREAD_SERVICE
+	vector< thread > 			workers_;
 	mutex						status_lock_;
 	bool						service_status_;
 	// Check if service is running.

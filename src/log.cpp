@@ -71,7 +71,7 @@ inline void td_log_get_time(string & logline) {
 void td_log_write_worker( ) {
 	log_item_t _logitem;
 	while ( td_log_status() ) {
-		if ( !g_logpool.wait_for(milliseconds(100), [&](log_item_t&& line){
+		if ( !g_logpool.wait_for(milliseconds(10), [&](log_item_t&& line){
 					_logitem.swap(line);
 				}) ) continue;
 		if ( g_logfp != NULL ) {
@@ -126,7 +126,8 @@ void td_log_start(td_log_level lv) {
 // Stop the log thread
 void td_log_stop() {
 	do {
-		unique_lock<mutex> _l(g_logmutex);
+		//unique_lock<mutex> _l(g_logmutex);
+		lock_guard<mutex> _l(g_logmutex);
 		g_logstatus = false;
 	} while ( false );
 	g_logthread->join();

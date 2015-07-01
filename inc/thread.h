@@ -93,10 +93,11 @@ public:
 	void notify_one(Item&& item) {
 		unique_lock<mutex> _l(mutex_);
 		pool_.emplace(item);
+		cv_.notify_one();
 	};
 
 	void clear() {
-		unique_lock<mutex> _l(mutex_);
+		lock_guard<mutex> _l(mutex_);
 		pool_.clear();
 	}
 };
