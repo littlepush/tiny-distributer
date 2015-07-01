@@ -93,7 +93,7 @@ void td_service_tunnel::_initialize_thread_pool() {
 	for ( uint32_t i = 0; i < config_->thread_pool_size(); ++i ) {
 		workers_.emplace_back(
 			[this](){
-				td_log(log_info, "server(%s) start thread %d", 
+				td_log(log_info, "server(%s) start thread %u", 
 						this->server_name().c_str(),
 						this_thread::get_id());
 				while ( this->_isrunning() ) {
@@ -104,7 +104,7 @@ void td_service_tunnel::_initialize_thread_pool() {
 					if ( _status == false ) continue;
 					this->_read_incoming_data(move(_so));
 				}
-				td_log(log_info, "server(%s) stop thread %d", 
+				td_log(log_info, "server(%s) stop thread %u", 
 						this->server_name().c_str(), 
 						this_thread::get_id());
 			}
@@ -180,13 +180,13 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 
 #ifdef USE_THREAD_SERVICE
 	_st = _wrapso.recv(_buf, 1024);
-	td_log(log_debug, "server(%s) did read from so: %d, st: %02x", 
+	td_log(log_debug, "server(%s) did read from so: %d, st: 0x%02x", 
 			this->server_name().c_str(), so, _st);
 	if ( _st & SO_READ_DONE ) {
 #else
 	while ( true ) {
 		_st = _wrapso.read_data(_buf, 1000);
-		td_log(log_debug, "server(%s) did read from so: %d, st: %02x", 
+		td_log(log_debug, "server(%s) did read from so: %d, st: 0x%02x", 
 				this->server_name().c_str(), so, _st);
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;

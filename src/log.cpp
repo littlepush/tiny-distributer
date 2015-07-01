@@ -97,14 +97,18 @@ void td_start_log_thread( ) {
 // Start & Stop log server
 // Log to file
 void td_log_start(const string &logpath, td_log_level lv) {
+	g_logfp = NULL;
 	g_logpath = logpath;
 	g_loglv = lv;
+	g_logsys = false;
 	td_start_log_thread();
 }
 // Log to specified fp, like stderr, stdout
 void td_log_start(FILE *fp, td_log_level lv) {
 	g_logfp = fp;
 	g_loglv = lv;
+	g_logpath = "";
+	g_logsys = false;
 	td_start_log_thread();
 }
 // Log to syslog
@@ -114,6 +118,8 @@ void td_log_start(td_log_level lv) {
 
 	g_logsys = true;
 	g_loglv = lv;
+	g_logfp = NULL;
+	g_logpath = "";
 	td_start_log_thread();
 }
 
@@ -136,7 +142,6 @@ void td_log_stop() {
 
 // Write the loc
 void td_log(td_log_level lv, const char *format, ...) {
-
 	// Check log level
 	if ( lv > g_loglv ) return;
 
@@ -153,9 +158,9 @@ void td_log(td_log_level lv, const char *format, ...) {
 	size_t _fmtsize = vsnprintf(NULL, 0, format, _va);
 	va_end(_va);
 	size_t _crtsize = _logline.size();
-	_logline.resize(_crtsize + _fmtsize);
+	_logline.resize(_crtsize + _fmtsize + 1);
 	va_start(_va, format);
-	vsnprintf(&_logline[_crtsize], _fmtsize, format, _va);
+	vsnprintf(&_logline[_crtsize], _fmtsize + 1, format, _va);
 	va_end(_va);
 
 	g_logpool.notify_one(make_pair(lv, _logline));
