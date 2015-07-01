@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-3-g0522501
+// Current Version: 0.4-5-gab7232a
 
 #include "socklite/socketlite.h"
 // src/socket.cpp
@@ -303,6 +303,11 @@ size_t sl_poller::fetch_events( sl_poller::earray &events, unsigned int timedout
 void sl_poller::monitor_socket( SOCKET_T so, bool oneshot, bool isreset ) {
 	if ( m_fd == -1 ) return;
 #if SL_TARGET_LINUX
+
+	// Socket must be nonblocking
+	unsigned long _u = 1;
+	SL_NETWORK_IOCTL_CALL(so, FIONBIO, &_u);
+
 	struct epoll_event _ee;
 	_ee.data.fd = so;
 	_ee.events = EPOLLIN | EPOLLET;
@@ -647,6 +652,13 @@ bool sl_tcpsocket::set_keepalive( bool keepalive )
         (const char *)&_keepalive, sizeof(int) );
 }
 
+bool sl_tcpsocket::set_nonblocking(bool nonblocking) 
+{
+	if ( m_socket == INVALIDATE_SOCKET ) return false;
+	unsigned long _u = (nonblocking ? 1 : 0);
+	return SL_NETWORK_IOCTL_CALL(m_socket, FIONBIO, &_u) >= 0;
+}
+
 // Read data from the socket until timeout or get any data.
 SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, u_int32_t timeout)
 {
@@ -696,14 +708,15 @@ SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, u_int32_t timeout)
 
 SO_READ_STATUE sl_tcpsocket::recv( string &buffer, unsigned int max_buffer_len ) {
 	if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
-
+	
+	// Socket must be nonblocking
 	buffer.resize(max_buffer_len);
 	int _retCode = ::recv(m_socket, &buffer[0], max_buffer_len, 0 );
-	if ( _retCode < 0 ) {
+	if ( _retCode <= 0 ) {
 		int _error = 0, _len = sizeof(int);
-        getsockopt( m_socket, SOL_SOCKET, SO_ERROR, 
-            (char *)&_error, (socklen_t *)&_len);
-		// Really closed
+		getsockopt( m_socket, SOL_SOCKET, SO_ERROR,
+				(char *)&_error, (socklen_t *)&_len);
+		// Really closed 
 		buffer.resize(0);
 		if ( _error == EBADF || _error == ECONNRESET || _error == ENOTCONN ) {
 			return SO_READ_CLOSE;
