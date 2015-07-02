@@ -205,14 +205,6 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 			this->server_name().c_str(), so);
 
 #ifdef USE_THREAD_SERVICE
-	SOCKETSTATUE _sost = socket_check_status(so, SO_CHECK_READ);
-	if ( _sost == SO_IDLE ) {
-		td_log(log_info, "server(%s) get an idle so(%d) while reading, must has some bug.",
-				this->server_name().c_str(), so);
-		sl_poller::server().monitor_socket(so, true, true);
-		return;
-	}
-
 	// Go to read
 	_st = _wrapso.recv(_buf, config_->socket_buffer_size());
 	td_log(log_debug, "server(%s) did recv from so: %d, st: 0x%02x, buf size: %u", 
@@ -226,11 +218,6 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;
 #endif
-		if ( !_wrapdso.write_data(_buf) ) {
-			td_log(log_error, "server(%s) failed to send reply data from src so(%d) to dst so(%d), buf size: %u",
-					this->server_name().c_str(), _wrapso.m_socket, _wrapdso.m_socket, _buf.size());
-		}
-
 		if ( request_so_.find(so) != request_so_.end() ) {
 			// This is a request socket
 			// broadcast to all backdoor services
@@ -244,6 +231,13 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 			for ( auto _rd : response_redirect_ ) {
 				_rd(_buf);
 			}
+		}
+
+		if ( !_wrapdso.write_data(_buf) ) {
+			td_log(log_error, "server(%s) failed to send reply data from src so(%d) to dst so(%d), buf size: %u",
+					this->server_name().c_str(), _wrapso.m_socket, _wrapdso.m_socket, _buf.size());
+			this->close_socket(so);
+			return;
 		}
 
 #ifdef USE_THREAD_SERVICE
