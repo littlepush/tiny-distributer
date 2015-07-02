@@ -51,15 +51,65 @@ void tiny_distributer_worker( ) {
 	}
 }
 
+void help() {
+	cout << "tinydst [config_file]" << endl;
+	cout << "	default config file is /etc/tinydst.json" << endl;
+	cout << "tinydst --help" << endl;
+	cout << "	print this message" << endl;
+	cout << "tinydst --version" << endl;
+	cout << "	print version information" << endl;
+}
+
+void version() {
+	cout << "tinydst -- Version: " << VERSION << endl;
+	cout << "Build Target: " << TARGET << endl;
+	cout << "Build info: " << endl;
+#ifdef USE_THREAD_SERVICE
+	cout << "	+thread-service" << endl;
+#else
+	cout << "	-thread-service" << endl;
+#endif
+#ifdef RELEASE
+	cout << "	+release" << endl;
+#endif
+#ifdef DEBUG
+	cout << "	+debug" << endl;
+#endif
+#ifdef WITHPG
+	cout << "	+withpg" << endl;
+#endif
+
+}
 int main( int argc, char * argv[] ) {
-
-	// Parse the parameters
-	// Todo...
-
 	string _config_path = "/etc/tinydst.json";
-    if ( argc == 2 ) {
-		_config_path = argv[1];
-    }
+	// Parse the parameters
+	bool _processing_command = false;
+	string _last_command = "";
+	for ( int _argindex = 1; _argindex < argc; ++_argindex ) {
+		if ( argv[_argindex][0] == '-' ) {	// this is a command
+			_processing_command = true;
+			int _cmdlength = strlen(argv[_argindex]);
+			int _sp = 1;
+			for ( ; _sp < _cmdlength; ++_sp ) {
+				if ( argv[_argindex][_sp] == '-' ) continue;
+				break;
+			}
+			_last_command = string(argv[_argindex] + _sp, _cmdlength - _sp);
+			if ( _last_command == "help" ) {
+				help();
+				return 0;
+			}
+			if ( _last_command == "version" ) {
+				version();
+				return 0;
+			}
+			cout << "Invalidate command: " << _last_command << endl;
+			help();
+			return 1;
+		} else {
+			_config_path = argv[_argindex];
+		}
+	}
 	
 	// Load config
 	Json::Value _config_root;

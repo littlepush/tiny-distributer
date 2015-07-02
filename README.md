@@ -1,5 +1,5 @@
-tiny-distributer
-================
+tiny-distributer V0.3
+=====================
 
 This is a tiny tcp socket redirect application.
 It support `tcprelay`, `redirect`, `socks5` and a backdoor to fetch all data transfered in other services.
@@ -24,6 +24,7 @@ Change logs
 
 * v0.1 sucks...but work.
 * v0.2 Use new version `socklite`, support 4 different services
+* v0.3 Support multiple thread and customized socket buffer size
 
 Reference
 =========
