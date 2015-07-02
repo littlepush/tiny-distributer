@@ -199,7 +199,10 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 		// If no data
 		if ( (_st & SO_READ_DONE) == 0 ) break;
 #endif
-		_wrapdso.write_data(_buf);
+		if ( !_wrapdso.write_data(_buf) ) {
+			td_log(log_error, "server(%s) failed to send reply data from src so(%d) to dst so(%d), buf size: %u",
+					this->server_name().c_str(), _wrapso.m_socket, _wrapdso.m_socket, _buf.size());
+		}
 
 		if ( request_so_.find(so) != request_so_.end() ) {
 			// This is a request socket
