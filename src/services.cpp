@@ -167,6 +167,7 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 			this->server_name().c_str(), so, _dso);
 	close(_dso);
 	request_so_.erase(_dso);
+	tunnel_so_.erase(_dso);
 	so_map_.erase(_dso);
 }
 
