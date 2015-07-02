@@ -83,11 +83,11 @@ void version() {
 int main( int argc, char * argv[] ) {
 	string _config_path = "/etc/tinydst.json";
 	// Parse the parameters
-	bool _processing_command = false;
+	//bool _processing_command = false;
 	string _last_command = "";
 	for ( int _argindex = 1; _argindex < argc; ++_argindex ) {
 		if ( argv[_argindex][0] == '-' ) {	// this is a command
-			_processing_command = true;
+			//_processing_command = true;
 			int _cmdlength = strlen(argv[_argindex]);
 			int _sp = 1;
 			for ( ; _sp < _cmdlength; ++_sp ) {
