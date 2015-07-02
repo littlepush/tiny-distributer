@@ -187,7 +187,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 			this->server_name().c_str(), so);
 
 #ifdef USE_THREAD_SERVICE
-	_st = _wrapso.recv(_buf, 1024);
+	_st = _wrapso.recv(_buf, config_->socket_buffer_size());
 	td_log(log_debug, "server(%s) did recv from so: %d, st: 0x%02x, buf size: %u", 
 			this->server_name().c_str(), so, _st, _buf.size());
 	if ( _st & SO_READ_DONE ) {

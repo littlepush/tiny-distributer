@@ -243,6 +243,11 @@ td_config::td_config(const string &name, const Json::Value &config_node)
 	if ( config_node.isMember("threads") == true ) {
 		thread_pool_size_ = config_node["threads"].asUInt();
 	}
+
+	buffer_size_ = 16384;
+	if ( config_node.isMember("bufsize") == true ) {
+		buffer_size_ = config_node["bufsize"].asUInt();
+	}
 }
 td_config::~td_config() {
 	// nothing
@@ -252,6 +257,7 @@ const string &td_config::server_name() const { return server_name_; }
 uint32_t td_config::local_ip() const { return local_ip_; }
 uint16_t td_config::server_port() const { return port_; }
 uint32_t td_config::thread_pool_size() const { return thread_pool_size_; }
+uint32_t td_config::socket_buffer_size() const { return buffer_size_; }
 bool td_config::is_ip_in_range(uint32_t ip) const {
 	if ( source_range_.size() == 0 ) return true;
 	for ( auto &_range : source_range_ ) {

@@ -78,6 +78,7 @@ protected:
 	uint16_t					port_;
 	vector<td_iprange>			source_range_;
 	uint32_t					thread_pool_size_;
+	uint32_t					buffer_size_;
 public:
 	static td_server server_type_from_string(const string &typestring);
 public:
@@ -89,6 +90,7 @@ public:
 	uint16_t server_port() const;
 	uint32_t thread_pool_size() const;
 	bool is_ip_in_range(uint32_t ip) const;
+	uint32_t socket_buffer_size() const;
 };
 
 class td_config_tcprelay : public td_config
