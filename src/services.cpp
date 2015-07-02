@@ -154,18 +154,20 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 #ifdef USE_THREAD_SERVICE
 	lock_guard<mutex> _l(service_mutex_);
 #endif
-	auto _peer = so_map_.find(so);
-	if ( _peer == so_map_.end() ) return;
-	// Close and clear
-	td_log(log_debug, "server(%s) has close socket %d relay with %d", 
-			this->server_name().c_str(), so, _peer->second);
+	close(so);
 	request_so_.erase(so);
 	tunnel_so_.erase(so);
-	request_so_.erase(_peer->second);
+
+	auto _peer = so_map_.find(so);
+	if ( _peer == so_map_.end() ) return;
+	SOCKET_T _dso = _peer->second;
 	so_map_.erase(so);
-	so_map_.erase(_peer->second);
-	close(so);
-	close(_peer->second);
+	// Close and clear
+	td_log(log_debug, "server(%s) has close socket %d relay with %d", 
+			this->server_name().c_str(), so, _dso);
+	close(_dso);
+	request_so_.erase(_dso);
+	so_map_.erase(_dso);
 }
 
 void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
@@ -187,7 +189,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 	auto _peer = so_map_.find(so);
 	if ( _peer == so_map_.end() ) {
 		// No such pair
-		td_log(log_debug, "server(%s) has closed peer for so(%d)", 
+		td_log(log_warning, "server(%s) has closed peer for so(%d)", 
 				this->server_name().c_str(), so);
 		_wrapso.close();
 	}
@@ -246,7 +248,6 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 #ifdef USE_THREAD_SERVICE
 		unique_lock<mutex> _l(service_mutex_);
 		if ( so_map_.find(so) == so_map_.end() ) {
-			_l.unlock();
 			td_log(log_debug, "server(%s) has already close so(%d)",
 					this->server_name().c_str(), so);
 			_wrapso.close();
