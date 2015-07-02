@@ -189,6 +189,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 				this->server_name().c_str(), so);
 		_wrapso.close();
 	}
+	_l.unlock();
 	sl_tcpsocket _wrapdso(_peer->second);
 	string _buf;
 	SO_READ_STATUE _st;
