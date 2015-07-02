@@ -90,6 +90,9 @@ pgclean :
 clean :
 	rm -vf src/*.o; rm -vf jsoncpp/*.o; rm -vf socklite/*.o; rm -rf $(OUT_DIR)
 
+install:
+	@if [ -f ./result/bin/tinydst ]; then cp -v ./result/bin/tinydst /usr/bin/; else echo "please make first"; fi
+
 AfterMake : 
 	@if [ "$(MAKECMDGOALS)" == "release" ]; then rm -vf src/*.o; rm -vf jsoncpp/*.o; rm -vf socklite/*.o; fi
 	@mv -vf $(TD_ROOT)/tinydst $(OUT_DIR)/bin/tinydst
