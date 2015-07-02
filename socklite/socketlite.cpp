@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-5-gab7232a
+// Current Version: 0.4-8-g8073c6d
 
 #include "socklite/socketlite.h"
 // src/socket.cpp
@@ -659,50 +659,61 @@ bool sl_tcpsocket::set_nonblocking(bool nonblocking)
 	return SL_NETWORK_IOCTL_CALL(m_socket, FIONBIO, &_u) >= 0;
 }
 
+bool sl_tcpsocket::set_socketbufsize( unsigned int rmem, unsigned int wmem )
+{
+	if ( m_socket == INVALIDATE_SOCKET ) return false;
+	if ( rmem != 0 ) {
+		setsockopt(m_socket, SOL_SOCKET, SO_RCVBUF, 
+				(char *)&rmem, sizeof(rmem));
+	}
+	if ( wmem != 0 ) {
+		setsockopt(m_socket, SOL_SOCKET, SO_SNDBUF,
+				(char *)&wmem, sizeof(wmem));
+	}
+	return true;
+}
 // Read data from the socket until timeout or get any data.
 SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, u_int32_t timeout)
 {
     if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
 
-    buffer = "";
+	buffer.resize(0);
     struct timeval _tv = { (long)timeout / 1000, 
         static_cast<int>(((long)timeout % 1000) * 1000) };
+
     fd_set recvFs;
     FD_ZERO( &recvFs );
     FD_SET( m_socket, &recvFs );
 
     // Buffer
-    char _buffer[512] = { 0 };
 	SO_READ_STATUE _st = SO_READ_WAITING;
 
-    do {
-        // Wait for the incoming
-        int _retCode = 0;
-        do {
-            _retCode = ::select( m_socket + 1, &recvFs, NULL, NULL, &_tv );
-        } while ( _retCode < 0 && errno == EINTR );
+    // Wait for the incoming
+    int _retCode = 0;
+   	do {
+    	_retCode = ::select( m_socket + 1, &recvFs, NULL, NULL, &_tv );
+    } while ( _retCode < 0 && errno == EINTR );
 
-        if ( _retCode < 0 ) // Error
-            return (SO_READ_STATUE)(_st | SO_READ_CLOSE);
-        if ( _retCode == 0 )// TimeOut
-            return (SO_READ_STATUE)(_st | SO_READ_TIMEOUT);
+    if ( _retCode < 0 ) // Error
+        return (SO_READ_STATUE)(_st | SO_READ_CLOSE);
+    if ( _retCode == 0 )// TimeOut
+        return (SO_READ_STATUE)(_st | SO_READ_TIMEOUT);
 
-        // Get data from the socket cache
-        _retCode = ::recv( m_socket, _buffer, 512, 0 );
-        // Error happen when read data, means the socket has become invalidate
-		// Or receive EOF, which should close the socket
-        if ( _retCode <= 0 ) {
-			return (SO_READ_STATUE)(_st | SO_READ_CLOSE);
-		}
-		_st = SO_READ_DONE;
-        buffer.append( _buffer, _retCode );
+	unsigned int _rmem = 0;
+	socklen_t _optlen = sizeof(_rmem);
+	getsockopt(m_socket, SOL_SOCKET, SO_RCVBUF, &_rmem, &_optlen);
+	buffer.resize(_rmem);
 
-		// If current buffer is not full, means current package just 
-		// end with _retCode bytes, so break current loop
-		if ( _retCode < 512 ) break;
-    } while ( true );
-
-    // Useless
+    // Get data from the socket cache
+    _retCode = ::recv( m_socket, &buffer[0], _rmem, 0 );
+    // Error happen when read data, means the socket has become invalidate
+	// Or receive EOF, which should close the socket
+    if ( _retCode <= 0 ) {
+		buffer.resize(0);
+		return (SO_READ_STATUE)(_st | SO_READ_CLOSE);
+	}
+	buffer.resize(_retCode);
+	_st = SO_READ_DONE;
     return _st;
 }
 
@@ -713,10 +724,10 @@ SO_READ_STATUE sl_tcpsocket::recv( string &buffer, unsigned int max_buffer_len )
 	buffer.clear();
 	buffer.resize(max_buffer_len);
 	do {
-		int _retCode = ::recv(m_socket, &buffer[0], max_buffer_len, 0);
+		int _retCode = ::recv(m_socket, &buffer[0], max_buffer_len, 0 );
 		if ( _retCode < 0 ) {
 			int _error = 0, _len = sizeof(int);
-			getsockopt(m_socket, SOL_SOCKET, SO_ERROR, 
+			getsockopt( m_socket, SOL_SOCKET, SO_ERROR,
 					(char *)&_error, (socklen_t *)&_len);
 			if ( _error == EINTR ) continue;	// signal 7, retry
 			// Other error
@@ -740,7 +751,7 @@ bool sl_tcpsocket::write_data( const string &data )
     if ( data.size() == 0 ) return false;
     if ( SOCKET_NOT_VALIDATE(m_socket) ) return false;
 
-    unsigned int _allSent = 0;
+    int _allSent = 0;
     int _lastSent = 0;
 
     u_int32_t _length = data.size();
@@ -766,7 +777,7 @@ bool sl_tcpsocket::write_data( const string &data )
 
 		unsigned int _available_length = min((_length - _allSent), _wmem);
         _lastSent = ::send( m_socket, _data + _allSent, 
-				_available_length, 0 | SL_NETWORK_NOSIGNAL );
+           	_available_length, 0 | SL_NETWORK_NOSIGNAL );
         if( _lastSent < 0 ) {
             // Failed to send
             return false;

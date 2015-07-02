@@ -131,6 +131,9 @@ td_service_tunnel::~td_service_tunnel() {
 void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
 	td_log(log_debug, "server(%s) did accept incoming so(%d) and relay so(%d)", 
 			this->server_name().c_str(), src, dst);
+	sl_tcpsocket _wsrc(src), _wdst(dst);
+	_wsrc.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
+	_wdst.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
 #ifdef USE_THREAD_SERVICE
 	lock_guard<mutex> _l(service_mutex_);
 #endif
