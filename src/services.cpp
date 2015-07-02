@@ -190,6 +190,15 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 			this->server_name().c_str(), so);
 
 #ifdef USE_THREAD_SERVICE
+	SOCKETSTATUE _sost = socket_check_status(so, SO_CHECK_READ);
+	if ( _sost == SO_IDLE ) {
+		td_log(log_info, "server(%s) get an idle so(%d) while reading, must has some bug.",
+				this->server_name().c_str(), so);
+		sl_poller::server().monitor_socket(so, true, true);
+		return;
+	}
+
+	// Go to read
 	_st = _wrapso.recv(_buf, config_->socket_buffer_size());
 	td_log(log_debug, "server(%s) did recv from so: %d, st: 0x%02x, buf size: %u", 
 			this->server_name().c_str(), so, _st, _buf.size());
