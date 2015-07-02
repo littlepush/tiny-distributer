@@ -180,7 +180,9 @@ void td_service_tunnel::socket_has_data_incoming(SOCKET_T so) {
 }
 
 void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
+#ifdef USE_THREAD_SERVICE
 	unique_lock<mutex> _l(service_mutex_);
+#endif
 	sl_tcpsocket _wrapso(so);
 	auto _peer = so_map_.find(so);
 	if ( _peer == so_map_.end() ) {
@@ -189,7 +191,9 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 				this->server_name().c_str(), so);
 		_wrapso.close();
 	}
+#ifdef USE_THREAD_SERVICE
 	_l.unlock();
+#endif
 	sl_tcpsocket _wrapdso(_peer->second);
 	string _buf;
 	SO_READ_STATUE _st;
