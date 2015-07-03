@@ -102,20 +102,12 @@ static td_iprange g_string_to_range(const string &rangestring) {
 
 	// IP part
 	string _ipstr = _com[0];
-	vector<string> _ipcom;
-	split_string(_ipstr, ".", _ipcom);
-	for ( int i = 0; i < (int)(_ipcom.size() - 4); ++i ) {
-		_ipcom.push_back("0");
+	struct sockaddr_in _saddr;
+	if ( inet_pton(AF_INET, _ipstr.c_str(), &(_saddr.sin_addr)) == 0 ) {
+		_oss << "invalidate ip string: " << _ipstr;
+		throw(runtime_error(_oss.str()));
 	}
-	uint32_t _ipaddr = 0;
-	for ( int i = 0; i < 4; ++i ) {
-		int _i = stoi(_ipcom[i], nullptr, 10);
-		if ( _i < 0 || _i > 255 ) {
-			_oss << "invalidate ip-range string: " << rangestring;
-			throw(runtime_error(_oss.str()));
-		}
-		_ipaddr |= (_i << ((3 - i) * 8));
-	}
+	uint32_t _ipaddr = (uint32_t)(_saddr.sin_addr.s_addr);
 
 	// Mask part
 	string _maskstr = _com[1];
