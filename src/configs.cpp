@@ -108,6 +108,7 @@ static td_iprange g_string_to_range(const string &rangestring) {
 		throw(runtime_error(_oss.str()));
 	}
 	uint32_t _ipaddr = (uint32_t)(_saddr.sin_addr.s_addr);
+	_ipaddr = htonl(_ipaddr);
 
 	// Mask part
 	string _maskstr = _com[1];
@@ -124,11 +125,12 @@ static td_iprange g_string_to_range(const string &rangestring) {
 			_oss << "invalidate ip-range string: " << rangestring << ", mask not in range";
 			throw(runtime_error(_oss.str()));
 		}
-		_mask >>= (32 - _m);
+		_mask <<= (32 - _m);
 	}
 
 	uint32_t _low = _ipaddr & _mask;
 	uint32_t _high = _low | (~_mask);
+
 	return make_pair(_low, _high);
 }
 
@@ -251,6 +253,7 @@ uint16_t td_config::server_port() const { return port_; }
 uint32_t td_config::thread_pool_size() const { return thread_pool_size_; }
 uint32_t td_config::socket_buffer_size() const { return buffer_size_; }
 bool td_config::is_ip_in_range(uint32_t ip) const {
+	ip = htonl(ip);
 	if ( source_range_.size() == 0 ) return true;
 	for ( auto &_range : source_range_ ) {
 		if ( _range.first <= ip && _range.second >= ip ) return true;
