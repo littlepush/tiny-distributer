@@ -51,6 +51,8 @@ bool td_service::is_maintaining_socket(SOCKET_T so) const {
 bool td_service::start_service() {
 	for ( int i = 0; i < 60; ++i ) {
 		if (server_so_.listen(config_->server_port(), config_->local_ip())) {
+			// Turn off the linger option
+			socket_set_linger_time(server_so_.m_socket, false);
 			sl_poller::server().bind_tcp_server(server_so_.m_socket);
 			td_log(log_info, "server(%s) has started and listen on port %u.", 
 					this->server_name().c_str(), config_->server_port());

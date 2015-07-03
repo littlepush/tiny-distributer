@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-9-gfbf78b8
+// Current Version: 0.4-10-g4040e8a
 
 #include "socklite/socketlite.h"
 // src/socket.cpp
@@ -138,6 +138,14 @@ SOCKETSTATUE socket_check_status( SOCKET_T hSo, SOCKETOPT option, u_int32_t wait
         if ( _ret < 0 ) return SO_INVALIDATE;
     }
     return SO_IDLE;
+}
+
+// Set the linger time for a socket, I strong suggest not to change this value unless you 
+// know what you are doing
+bool socket_set_linger_time(SOCKET_T so, bool onoff, unsigned timeout)
+{
+	struct linger _sol = { (onoff ? 1 : 0), (int)timeout };
+	return ( setsockopt(so, SOL_SOCKET, SO_LINGER, &_sol, sizeof(_sol)) == 0 );
 }
 
 // Virtual destructure
