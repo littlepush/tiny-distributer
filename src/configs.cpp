@@ -124,7 +124,7 @@ static td_iprange g_string_to_range(const string &rangestring) {
 			_oss << "invalidate ip-range string: " << rangestring << ", mask not in range";
 			throw(runtime_error(_oss.str()));
 		}
-		_mask <<= (32 - _m);
+		_mask >>= (32 - _m);
 	}
 
 	uint32_t _low = _ipaddr & _mask;
