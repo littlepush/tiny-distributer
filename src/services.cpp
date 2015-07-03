@@ -49,14 +49,16 @@ bool td_service::is_maintaining_socket(SOCKET_T so) const {
 	return false;
 }
 bool td_service::start_service() {
-	for ( int i = 0; i < 30; ++i ) {
+	for ( int i = 0; i < 60; ++i ) {
 		if (server_so_.listen(config_->server_port(), config_->local_ip())) {
 			sl_poller::server().bind_tcp_server(server_so_.m_socket);
+			td_log(log_info, "server(%s) has started and listen on port %u.", 
+					this->server_name().c_str(), config_->server_port());
 			return true;
 		}
 		td_log(log_error, "server(%s) failed to listen on port %u, retrying...", 
 				this->server_name().c_str(), config_->server_port());
-		sleep(1);
+		sleep(2);
 	}
 	td_log(log_error, "server(%s) failed to listen on port %u, failed to start.", 
 			this->server_name().c_str(), config_->server_port());
