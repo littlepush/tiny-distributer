@@ -52,7 +52,7 @@ bool td_service::start_service() {
 	for ( int i = 0; i < 60; ++i ) {
 		if (server_so_.listen(config_->server_port(), config_->local_ip())) {
 			// Turn off the linger option
-			socket_set_linger_time(server_so_.m_socket, false);
+			socket_set_linger_time(server_so_.m_socket, true, 0);
 			sl_poller::server().bind_tcp_server(server_so_.m_socket);
 			td_log(log_info, "server(%s) has started and listen on port %u.", 
 					this->server_name().c_str(), config_->server_port());
@@ -138,6 +138,8 @@ void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
 	sl_tcpsocket _wsrc(src), _wdst(dst);
 	_wsrc.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
 	_wdst.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
+	socket_set_linger_time(src, true, 0);
+	socket_set_linger_time(dst, true, 0);
 #ifdef USE_THREAD_SERVICE
 	lock_guard<mutex> _l(service_mutex_);
 #endif
