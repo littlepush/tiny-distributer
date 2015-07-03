@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-10-g4040e8a
+// Current Version: 0.4-11-g1365925
 
 #pragma once
 // inc/socket.h
