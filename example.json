@@ -43,68 +43,74 @@
 //		to `src` list.
 
 {
-// An Example tcp relay service
-	"tcprelay_example": {
-		"server": "TCPRELAY",
-		"port": 3880,
-		"bind": "127.0.0.1",
-		"src": [ 
-			"127.0.0.1",
-			"128.168.1.0/24"
-		],
-		// any redirect service support the `socks5` config.
-		"socks5": {
-			"addr": "127.0.0.1", 
-			"port": 3882
-		}
-	},
-// An Example redirect service
-	"redirect_example": {
-		"server": "REDIRECT",
-		"port": 3881,
-		// `dst` is the destination list for the redirect service
-		// the service will connect & redirect data to only dst once a time.
-		// when the first configed server cannot be reached, then
-		// the redirect service will try to connect to the second,
-		// until all destinations are down.
-		"dst": [
-			{
-				"addr": "192.168.1.2",
-				"port": 3881,
-				"socks5": [
-					{
-						"addr": "127.0.0.1", 
-						"port": 3882
-					}
-				]
-			},
-			{
-				"addr": "192.168.1.3",
-				"port": 3881
-			},
-			{
-				"addr": "192.168.1.4",
-				"port": 3881
+	"daemon" : true,
+	"loglevel" : "notice",
+	"logpath" : "syslog"
+	{
+	// An Example tcp relay service
+		"tcprelay_example": {
+			"server": "TCPRELAY",
+			"port": 3880,
+			"bind": "127.0.0.1",
+			"threads": 5,
+			"src": [ 
+				"127.0.0.1",
+				"192.168.1.0/24"
+			],
+			// any redirect service support the `socks5` config.
+			"socks5": {
+				"addr": "127.0.0.1", 
+				"port": 3882
 			}
-		]
-	},
-// An Example socks5 service
-	"socks5_example": {
-		"server": "SOCKS5",
-		"port": 3882,
-		// `socks5 is an optional property`
-		"socks5": {
-			"addr": "127.0.0.1",
-			"port": 4098
+		},
+	// An Example redirect service
+		"redirect_example": {
+			"server": "REDIRECT",
+			"port": 3881,
+			// `dst` is the destination list for the redirect service
+			// the service will connect & redirect data to only dst once a time.
+			// when the first configed server cannot be reached, then
+			// the redirect service will try to connect to the second,
+			// until all destinations are down.
+			"dst": [
+				{
+					"addr": "192.168.1.2",
+					"port": 3881,
+					"socks5": [
+						{
+							"addr": "127.0.0.1", 
+							"port": 3882
+						}
+					]
+				},
+				{
+					"addr": "192.168.1.3",
+					"port": 3881
+				},
+				{
+					"addr": "192.168.1.4",
+					"port": 3881
+				}
+			]
+		},
+	// An Example socks5 service
+		"socks5_example": {
+			"server": "SOCKS5",
+			"port": 3882,
+			// `socks5 is an optional property`
+			"socks5": {
+				"addr": "127.0.0.1",
+				"port": 4098
+			}
+		},
+	// Backdoor service
+		"backdoor-server": {
+			"server": "BACKDOOR",
+			"port": 3883,
+			"listen": "socks5_example",
+			// Only redirect the request data.
+			"request": true,
+			"response": false
 		}
-	},
-// Backdoor service
-	"backdoor-server": {
-		"server": "BACKDOOR",
-		"port": 3883,
-		"listen": "socks5_example",
-		// Only redirect the request data.
-		"request": true,
-		"response": false
 	}
 }
