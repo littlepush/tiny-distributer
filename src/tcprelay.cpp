@@ -55,17 +55,24 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 #define TCPRELAY_DIRECT_TIMEOUT	300
 #endif
 	if ( !_wrap_dst.connect(_org_addr, _org_port, TCPRELAY_DIRECT_TIMEOUT) ) {
+		td_log(log_debug, "server(%s) cannot direct connect to %s:%u, will use socks5 proxy",
+				this->server_name().c_str(), _org_addr.c_str(), _org_port);
 		for ( auto &_socks5 : _cfg->proxy_list() ) {
 			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
+			td_log(log_debug, "%s: failed to connect to proxy %s:%u", 
+					this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
 		}
 		if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
 			_wrap_dst.close();
 			_wrap_src.close();
 			return false;
 		}
+	} else {
+		td_log(log_debug, "server(%s) did connect to %s:%u by direct connection",
+				this->server_name().c_str(), _org_addr.c_str(), _org_port);
 	}
 #else
-	for ( auto &_socks5 : static_cast<td_config_tcprelay *>(config_)->proxy_list() ) {
+	for ( auto &_socks5 : _cfg->proxy_list() ) {
 		if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
 	}
 	if ( !_wrap_dst.connect(_org_addr, _org_port) ) {

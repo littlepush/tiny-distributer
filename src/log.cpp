@@ -81,7 +81,9 @@ void td_log_write_worker( ) {
 			syslog(_logitem.first, "%s\n", _logitem.second.c_str());
 		} else {
 			// To file
-			g_logfp = fopen(g_logpath.c_str(), "a+");
+			do {
+				g_logfp = fopen(g_logpath.c_str(), "a+");
+			} while ( g_logfp == NULL );
 			fprintf(g_logfp, "%s\n", _logitem.second.c_str());
 			fclose(g_logfp);
 			g_logfp = NULL;
