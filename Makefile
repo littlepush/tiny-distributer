@@ -26,6 +26,7 @@ TD_DEFINES = -DVERSION=\"$(shell ./version)\" \
 			 -I./inc \
 			 -std=c++11 \
 			 -DUSE_THREAD_SERVICE \
+			 -DUSE_SOCKS_WHITELIST \
 			 #-DAUTO_TCPRELAY_SOCKS5 \
 			 #-DTCPRELAY_DIRECT_TIMEOUT=50
 THIRDPARTY = -I./jsoncpp -I./socklite

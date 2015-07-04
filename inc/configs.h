@@ -98,10 +98,16 @@ class td_config_tcprelay : public td_config
 protected:
 	vector<td_peerinfo>			socks5_proxy_;
 
+#ifdef USE_SOCKS_WHITELIST
+	vector<td_iprange>			socks5_whitelist_;
+#endif
 public:
 	td_config_tcprelay(const string &name, const Json::Value &config_node);
 
 	const vector<td_peerinfo>& proxy_list() const;
+#ifdef USE_SOCKS_WHITELIST
+	bool is_ip_in_whitelist(uint32_t ipaddr) const;
+#endif
 };
 
 class td_config_redirect : public td_config

@@ -270,7 +270,33 @@ td_config_tcprelay::td_config_tcprelay(const string &name, const Json::Value &co
 	
 	Json::Value _socks5_config = config_node["socks5"];
 	g_object_to_socks5list(_socks5_config, socks5_proxy_);
+
+#ifdef USE_SOCKS_WHITELIST
+	// Try to get white list config
+	if ( config_node.isMember("socks5-whitelist") == true ) {
+		const Json::Value &_whitelist = config_node["socks5-whitelist"];
+		for ( Json::ArrayIndex i = 0; i < _whitelist.size(); ++i ) {
+			socks5_whitelist_.push_back(g_string_to_range(_whitelist[i].asString()));
+		}
+		// Sort the white list by the low bound
+		sort(begin(socks5_whitelist_), end(socks5_whitelist_), [](td_iprange a, td_iprange b) {
+					return (a.first < b.first);
+				});
+	}
+#endif
 }
+
+#ifdef USE_SOCKS_WHITELIST
+bool td_config_tcprelay::is_ip_in_whitelist(uint32_t ipaddr) const {
+	return binary_search(
+			begin(socks5_whitelist_), 
+			end(socks5_whitelist_), 
+			make_pair(ipaddr, ipaddr), 
+			[](const td_iprange &value, const td_iprange &range) {
+				return (range.first <= value.first && value.first <= range.second);
+			});
+}
+#endif
 
 const vector<td_peerinfo>& td_config_tcprelay::proxy_list() const { return socks5_proxy_; }
 

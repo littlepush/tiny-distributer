@@ -50,6 +50,18 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 
 	sl_tcpsocket _wrap_dst(true);
 	td_config_tcprelay *_cfg = static_cast<td_config_tcprelay *>(config_);
+	bool _ret = false;
+
+#ifdef USE_SOCKS_WHITELIST
+	struct sockaddr_in _saddr;
+	inet_pton(AF_INET, _org_addr.c_str(), &(_saddr.sin_addr));
+	uint32_t _ipaddr = (uint32_t)(_saddr.sin_addr.s_addr);
+	_ipaddr = htonl(_ipaddr);
+	if ( _cfg->is_ip_in_whitelist(_ipaddr) ) {
+		_ret = _wrap_dst.connect(_org_addr, _org_port);
+	} else {
+#endif
+
 #ifdef AUTO_TCPRELAY_SOCKS5
 #ifndef TCPRELAY_DIRECT_TIMEOUT
 #define TCPRELAY_DIRECT_TIMEOUT	300
@@ -62,11 +74,7 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 			td_log(log_debug, "%s: failed to connect to proxy %s:%u", 
 					this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
 		}
-		if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
-			_wrap_dst.close();
-			_wrap_src.close();
-			return false;
-		}
+		_ret = _wrap_dst.connect(_org_addr, _org_port);
 	} else {
 		td_log(log_debug, "server(%s) did connect to %s:%u by direct connection",
 				this->server_name().c_str(), _org_addr.c_str(), _org_port);
@@ -75,17 +83,23 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	for ( auto &_socks5 : _cfg->proxy_list() ) {
 		if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
 	}
-	if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
-		_wrap_dst.close();
-		_wrap_src.close();
-		return false;
+	_ret = _wrap_dst.connect(_org_addr, _org_port);
+#endif
+
+#ifdef USE_SOCKS_WHITELIST
 	}
 #endif
 
-	// Add to monitor
-	this->_did_accept_sockets(_wrap_src.m_socket, _wrap_dst.m_socket);
+	if ( _ret ) {
+		// Add to monitor
+		this->_did_accept_sockets(_wrap_src.m_socket, _wrap_dst.m_socket);
+	} else {
+		_wrap_src.close();
+		_wrap_dst.close();
+	}
 
-	return true;
+	// Return the status
+	return _ret;
 }
 
 // tinydst.tcprelay.cpp
