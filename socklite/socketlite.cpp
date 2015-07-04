@@ -21,7 +21,7 @@
 */
 // This is an amalgamate file for socketlite
 
-// Current Version: 0.4-11-g1365925
+// Current Version: 0.4-12-ga2764ba
 
 #include "socklite/socketlite.h"
 // src/socket.cpp
@@ -378,12 +378,12 @@ sl_tcpsocket::~sl_tcpsocket()
 }
 
 // Connect to peer
-bool sl_tcpsocket::_internal_connect( const string &ipaddr, u_int32_t port )
+bool sl_tcpsocket::_internal_connect( const string &ipaddr, uint32_t port, uint32_t timeout )
 {
     if ( ipaddr.size() == 0 || port == 0 || port >= 65535 ) return false;
     
     const char *_addr = ipaddr.c_str();
-    u_int32_t _timeout = 1000;
+    uint32_t _timeout = timeout;
 
     // Try to nslookup the host
     unsigned int _in_addr = network_domain_to_inaddr( _addr );
@@ -455,7 +455,7 @@ bool sl_tcpsocket::_internal_connect( const string &ipaddr, u_int32_t port )
     return true;
 }
 
-bool sl_tcpsocket::setup_proxy( const string &socks5_addr, u_int32_t socks5_port )
+bool sl_tcpsocket::setup_proxy( const string &socks5_addr, uint32_t socks5_port )
 {
     // Build a connection to the proxy server
     if ( ! this->_internal_connect( socks5_addr, socks5_port ) ) {
@@ -489,7 +489,7 @@ bool sl_tcpsocket::setup_proxy( const string &socks5_addr, u_int32_t socks5_port
 }
 
 bool sl_tcpsocket::setup_proxy(
-		const string &socks5_addr, u_int32_t socks5_port,
+		const string &socks5_addr, uint32_t socks5_port,
 		const string &username, const string &password) 
 {
 	// Connect to socks 5 proxy
@@ -536,10 +536,10 @@ bool sl_tcpsocket::setup_proxy(
 	return true;
 }
 
-bool sl_tcpsocket::connect( const string &ipaddr, u_int32_t port )
+bool sl_tcpsocket::connect( const string &ipaddr, uint32_t port, uint32_t timeout )
 {
     if ( m_is_connected_to_proxy == false ) {
-        return this->_internal_connect( ipaddr, port );
+        return this->_internal_connect( ipaddr, port, timeout );
     } else {
         // Establish a connection through the proxy server.
         u_int8_t _buffer[256] = {0};
@@ -596,7 +596,7 @@ bool sl_tcpsocket::connect( const string &ipaddr, u_int32_t port )
     }
 }
 // Listen on specified port and address, default is 0.0.0.0
-bool sl_tcpsocket::listen( u_int32_t port, u_int32_t ipaddr )
+bool sl_tcpsocket::listen( uint32_t port, uint32_t ipaddr )
 {
     struct sockaddr_in _sock_addr;
     m_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -629,14 +629,14 @@ void sl_tcpsocket::close()
 }
 
 // Try to get the original destination
-bool sl_tcpsocket::get_original_dest( string &address, u_int32_t &port )
+bool sl_tcpsocket::get_original_dest( string &address, uint32_t &port )
 {
 #if SL_TARGET_LINUX
     struct sockaddr_in _dest_addr;
     socklen_t _socklen = sizeof(_dest_addr);
     int _error = getsockopt( m_socket, SOL_IP, SO_ORIGINAL_DST, &_dest_addr, &_socklen );
     if ( _error ) return false;
-    u_int32_t _ipaddr = _dest_addr.sin_addr.s_addr;
+    uint32_t _ipaddr = _dest_addr.sin_addr.s_addr;
     port = ntohs(_dest_addr.sin_port);
     network_int_to_ipaddress( _ipaddr, address );
     return true;
@@ -683,7 +683,7 @@ bool sl_tcpsocket::set_socketbufsize( unsigned int rmem, unsigned int wmem )
 	return true;
 }
 // Read data from the socket until timeout or get any data.
-SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, u_int32_t timeout)
+SO_READ_STATUE sl_tcpsocket::read_data( string &buffer, uint32_t timeout)
 {
     if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
 
@@ -800,7 +800,7 @@ sl_udpsocket::~sl_udpsocket()
 }
 
 // Connect to peer
-bool sl_udpsocket::connect( const string &ipaddr, u_int32_t port )
+bool sl_udpsocket::connect( const string &ipaddr, uint32_t port, uint32_t timeout )
 {
     memset( &m_sock_addr, 0, sizeof(m_sock_addr) );
     m_sock_addr.sin_family = AF_INET;
@@ -818,7 +818,7 @@ bool sl_udpsocket::connect( const string &ipaddr, u_int32_t port )
     return true;
 }
 // Listen on specified port and address, default is 0.0.0.0
-bool sl_udpsocket::listen( u_int32_t port, u_int32_t ipaddr )
+bool sl_udpsocket::listen( uint32_t port, uint32_t ipaddr )
 {
     m_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if ( SOCKET_NOT_VALIDATE(m_socket) ) return false;
@@ -842,7 +842,7 @@ void sl_udpsocket::close()
 }
 // When the socket is a listener, use this method 
 // to accept client's connection.
-sl_socket* sl_udpsocket::get_client( u_int32_t timeout )
+sl_socket* sl_udpsocket::get_client( uint32_t timeout )
 {
     if ( m_socket == INVALIDATE_SOCKET ) return NULL;
 
@@ -887,7 +887,7 @@ bool sl_udpsocket::set_reusable( bool reusable )
 }
 
 // Read data from the socket until timeout or get any data.
-SO_READ_STATUE sl_udpsocket::read_data( string &buffer, u_int32_t timeout )
+SO_READ_STATUE sl_udpsocket::read_data( string &buffer, uint32_t timeout )
 {
     if ( SOCKET_NOT_VALIDATE(m_socket) ) return SO_READ_CLOSE;
 
@@ -925,7 +925,7 @@ bool sl_udpsocket::write_data( const string &data )
         int _allSent = 0;
         int _lastSent = 0;
 
-        u_int32_t _length = data.size();
+        uint32_t _length = data.size();
         const char *_data = data.c_str();
 
         while ( (unsigned int)_allSent < _length )

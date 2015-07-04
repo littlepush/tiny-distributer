@@ -49,14 +49,31 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	}
 
 	sl_tcpsocket _wrap_dst(true);
+	td_config_tcprelay *_cfg = static_cast<td_config_tcprelay *>(config_);
+#ifdef AUTO_TCPRELAY_SOCKS5
+#ifndef TCPRELAY_DIRECT_TIMEOUT
+#define TCPRELAY_DIRECT_TIMEOUT	300
+#endif
+	if ( !_wrap_dst.connect(_org_addr, _org_port, TCPRELAY_DIRECT_TIMEOUT) ) {
+		for ( auto &_socks5 : _cfg->proxy_list() ) {
+			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
+		}
+		if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
+			_wrap_dst.close();
+			_wrap_src.close();
+			return false;
+		}
+	}
+#else
 	for ( auto &_socks5 : static_cast<td_config_tcprelay *>(config_)->proxy_list() ) {
 		if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
 	}
 	if ( !_wrap_dst.connect(_org_addr, _org_port) ) {
 		_wrap_dst.close();
 		_wrap_src.close();
-		return true;
+		return false;
 	}
+#endif
 
 	// Add to monitor
 	this->_did_accept_sockets(_wrap_src.m_socket, _wrap_dst.m_socket);
