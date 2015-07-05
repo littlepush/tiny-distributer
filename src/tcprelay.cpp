@@ -57,7 +57,7 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	inet_pton(AF_INET, _org_addr.c_str(), &(_saddr.sin_addr));
 	uint32_t _ipaddr = (uint32_t)(_saddr.sin_addr.s_addr);
 	_ipaddr = htonl(_ipaddr);
-	if ( _cfg->is_ip_in_whitelist(htonl(_ipaddr)) ) {
+	if ( _cfg->is_ip_in_whitelist(_ipaddr) ) {
 		td_log(log_debug, "%s: %s is in white list",
 			   this->server_name().c_str(),	_org_addr.c_str());
 		_ret = _wrap_dst.connect(_org_addr, _org_port);
