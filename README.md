@@ -119,18 +119,4 @@ See the `LICENSE` file for details. In summary, tinydst is licensed under GPL v3
 Donate
 ======
 If you think this little project helps you in your life, please donate me! 
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="hidden" name="hosted_button_id" value="6BRXZJX5ENJVQ">
-<table>
-<tr><td><input type="hidden" name="on0" value="Donation Amount">Donation Amount</td></tr><tr><td><select name="os0">
-    <option value="Just so so...">Just so so... $1.00 USD</option>
-    <option value="Well done!">Well done! $3.00 USD</option>
-    <option value="Amazing!">Amazing! $5.00 USD</option>
-</select> </td></tr>
-</table>
-<input type="hidden" name="currency_code" value="USD">
-<input type="image" src="https://raw.githubusercontent.com/littlepush/tiny-distributer/master/PayPal_Donate.png" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-</form>
 
