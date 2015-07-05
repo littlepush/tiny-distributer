@@ -45,7 +45,20 @@ The configuration file is a JSON file.
                 "socks5" : {            // Redirect use a socks5 proxy
                     "addr": "127.0.0.1",
                     "port": 1080
-                }
+                }, 
+				"socks5-whitelist" : [	// new feature in 0.5
+					"1.0.1.0/24",
+					"1.0.2.0/23",
+					"1.0.8.0/21",
+					"1.0.32.0/19",
+					"1.1.0.0/24",
+					"1.1.2.0/23",
+					"1.1.4.0/22",
+					"1.1.8.0/21",
+					"1.1.16.0/20",
+					"1.1.32.0/19",
+					// More ip ranges...
+				]
             },
             "REDIRECT-ServerName" : {
                 "server" : "REDIRECT",
@@ -85,11 +98,13 @@ Change logs
         * failed to open log file and crash
         * IP Range filter
     * test new features
+* v0.5 TcpRelay service now support sock5 white list.
 
 Todo
 ====
 
-* v0.5 Maintain socks5 proxy white list, make auto tcprelay socks proxy selecting the default action
+* v0.6 Support UDP server.
+* v0.7 DNS Relay Server.
 
 Reference
 =========
