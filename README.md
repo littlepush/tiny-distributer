@@ -1,4 +1,4 @@
-tiny-distributer V0.4
+tiny-distributer V0.5
 =====================
 
 This is a tiny tcp socket redirect application.
