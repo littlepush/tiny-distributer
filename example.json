@@ -61,7 +61,11 @@
 			"socks5": {
 				"addr": "127.0.0.1", 
 				"port": 3882
-			}
+			},
+			// V0.5 socks white list
+			"socks5-whitelist" : [
+				"1.0.0.0/16"
+			]
 		},
 	// An Example redirect service
 		"redirect_example": {

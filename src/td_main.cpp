@@ -69,6 +69,18 @@ void version() {
 #else
 	cout << "	-thread-service" << endl;
 #endif
+#ifdef USE_SOCKS_WHITELIST
+	cout << "	+socks-whitelist" << endl;
+#else
+	cout << "	-socks-whitelist" << endl;
+#endif
+
+#ifdef AUTO_TCPRELAY_SOCKS5
+	cout << "	+auto-tcprelay-socks" << endl;
+#else
+	cout << "	-auto-tcprelay-socks" << endl;
+#endif
+
 #ifdef RELEASE
 	cout << "	+release" << endl;
 #endif
