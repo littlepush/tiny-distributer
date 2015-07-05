@@ -142,8 +142,7 @@ int main( int argc, char * argv[] ) {
 		return 1;
 	}
 
-    //if ( _daemon ) {
-	if ( false ) {
+    if ( _daemon ) {
         pid_t _pid = fork();
         if ( _pid < 0 ) {
             cerr << "Failed to create child process." << endl;
