@@ -217,11 +217,11 @@ int main( int argc, char * argv[] ) {
 		if ( _type == td_config::td_server_tcprelay ) {
 			_service = new td_service_tcprelay(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_redirect ) {
-			//_service = new td_service_redirect(_server_name, _config_node);
+			_service = new td_service_redirect(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_socks5 ) {
-			//_service = new td_service_socks5(_server_name, _config_node);
+			_service = new td_service_socks5(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_backdoor ) {
-			//_service = new td_service_backdoor(_server_name, _config_node);
+			_service = new td_service_backdoor(_server_name, _config_node);
 		}
 
 		if ( _service != NULL ) {
