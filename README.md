@@ -118,5 +118,4 @@ See the `LICENSE` file for details. In summary, tinydst is licensed under GPL v3
 
 Donate
 ======
-If you think this little project helps you in your life, please donate me! 
-
+If you think this little project helps you in your life, please [donate me](https://pushchen.com/donate)! 
