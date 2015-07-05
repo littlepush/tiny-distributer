@@ -22,27 +22,9 @@
 
 #include "tcprelay.h"
 
-#define IP_WHITELIST_TEST(domain)				\
-	cout << domain << ": " << (_cfg->is_ip_in_whitelist(htonl(network_domain_to_inaddr(domain))) ? "yes" : "no") << endl
-
-
 td_service_tcprelay::td_service_tcprelay(const string &name, const Json::Value &config_node)
 {
 	config_ = new td_config_tcprelay(name, config_node);
-
-	td_config_tcprelay *_cfg = static_cast<td_config_tcprelay *>(config_);
-	IP_WHITELIST_TEST("www.baidu.com");
-	IP_WHITELIST_TEST("www.taobao.com");
-	IP_WHITELIST_TEST("www.jd.com");
-	IP_WHITELIST_TEST("www.google.com");
-	IP_WHITELIST_TEST("twitter.com");
-	IP_WHITELIST_TEST("www.facebook.com");
-	IP_WHITELIST_TEST("pushchen.com");
-	IP_WHITELIST_TEST("www.tmall.com");
-	IP_WHITELIST_TEST("github.com");
-
-	exit(0);
-
 #ifdef USE_THREAD_SERVICE
 	this->_initialize_thread_pool();
 #endif

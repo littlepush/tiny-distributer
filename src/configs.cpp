@@ -288,13 +288,15 @@ td_config_tcprelay::td_config_tcprelay(const string &name, const Json::Value &co
 
 #ifdef USE_SOCKS_WHITELIST
 bool td_config_tcprelay::is_ip_in_whitelist(uint32_t ipaddr) const {
-	return binary_search(
-			begin(socks5_whitelist_), 
-			end(socks5_whitelist_), 
-			make_pair(ipaddr, ipaddr), 
-			[](const td_iprange &value, const td_iprange &range) {
-				return (range.first <= value.first && value.first <= range.second);
+	auto _lbit = lower_bound(
+			begin(socks5_whitelist_),
+			end(socks5_whitelist_),
+			ipaddr,
+			[](const td_iprange &it, const uint32_t &ip) {
+				return (it.second < ip);
 			});
+	if ( _lbit == end(socks5_whitelist_) ) return false;
+	return (_lbit->first <= ipaddr && _lbit->second >= ipaddr);
 }
 #endif
 

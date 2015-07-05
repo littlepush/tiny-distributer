@@ -146,18 +146,15 @@ int main( int argc, char * argv[] ) {
         pid_t _pid = fork();
         if ( _pid < 0 ) {
             cerr << "Failed to create child process." << endl;
-            //close_config_file(_config);
             return 1;
         }
         if ( _pid > 0 ) {
             // Has create the child process.
-            // close_config_file(_config);
             return 0;
         }
 
         if ( setsid() < 0 ) {
             cerr << "failed to set session leader for child process." << endl;
-            // close_config_file(_config);
             return 3;
         }
     }
@@ -220,11 +217,11 @@ int main( int argc, char * argv[] ) {
 		if ( _type == td_config::td_server_tcprelay ) {
 			_service = new td_service_tcprelay(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_redirect ) {
-			_service = new td_service_redirect(_server_name, _config_node);
+			//_service = new td_service_redirect(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_socks5 ) {
-			_service = new td_service_socks5(_server_name, _config_node);
+			//_service = new td_service_socks5(_server_name, _config_node);
 		} else if ( _type == td_config::td_server_backdoor ) {
-			_service = new td_service_backdoor(_server_name, _config_node);
+			//_service = new td_service_backdoor(_server_name, _config_node);
 		}
 
 		if ( _service != NULL ) {
