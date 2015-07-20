@@ -138,6 +138,8 @@ void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
 	sl_tcpsocket _wsrc(src), _wdst(dst);
 	_wsrc.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
 	_wdst.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
+	_wsrc.set_keepalive(true);
+	_wdst.set_keepalive(true);
 	socket_set_linger_time(src, true, 0);
 	socket_set_linger_time(dst, true, 0);
 #ifdef USE_THREAD_SERVICE
