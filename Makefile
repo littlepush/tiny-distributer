@@ -27,8 +27,8 @@ TD_DEFINES = -DVERSION=\"$(shell ./version)\" \
 			 -std=c++11 \
 			 -DUSE_THREAD_SERVICE \
 			 -DUSE_SOCKS_WHITELIST \
-			 #-DAUTO_TCPRELAY_SOCKS5 \
-			 #-DTCPRELAY_DIRECT_TIMEOUT=30
+			 -DAUTO_TCPRELAY_SOCKS5 \
+			 -DTCPRELAY_DIRECT_TIMEOUT=20
 THIRDPARTY = -I./jsoncpp -I./socklite
 
 ifeq "$(MAKECMDGOALS)" "release"

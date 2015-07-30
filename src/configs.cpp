@@ -328,10 +328,10 @@ td_config_socks5::td_config_socks5(const string &name, const Json::Value &config
 	:td_config(name, config_node)
 {
 	// No socks5 config
-	if ( config_node.isMember("socks5") == false ) return;
-
-	Json::Value _socks5_config = config_node["socks5"];
-	g_object_to_socks5list(_socks5_config, socks5_proxy_);
+	if ( config_node.isMember("socks5") == true ) {
+		Json::Value _socks5_config = config_node["socks5"];
+		g_object_to_socks5list(_socks5_config, socks5_proxy_);
+	}
 
 	noauth_ = (config_node.isMember("noauth") ? config_node["noauth"].asBool() : true);
 	if ( config_node.isMember("validation") ) {

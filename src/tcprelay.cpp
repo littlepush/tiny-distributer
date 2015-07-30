@@ -47,6 +47,9 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 		_wrap_src.close();
 		return false;
 	}
+	td_log(log_notice, "%s: %d trying to connect to %s:%u", 
+			this->server_name().c_str(), so, 
+			_org_addr.c_str(), _org_port);
 
 	sl_tcpsocket _wrap_dst(true);
 	td_config_tcprelay *_cfg = static_cast<td_config_tcprelay *>(config_);
@@ -66,13 +69,17 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 
 #ifdef AUTO_TCPRELAY_SOCKS5
 #ifndef TCPRELAY_DIRECT_TIMEOUT
-#define TCPRELAY_DIRECT_TIMEOUT	300
+#define TCPRELAY_DIRECT_TIMEOUT	100
 #endif
 	if ( !_wrap_dst.connect(_org_addr, _org_port, TCPRELAY_DIRECT_TIMEOUT) ) {
 		td_log(log_debug, "server(%s) cannot direct connect to %s:%u, will use socks5 proxy",
 				this->server_name().c_str(), _org_addr.c_str(), _org_port);
 		for ( auto &_socks5 : _cfg->proxy_list() ) {
-			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
+			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) {
+				td_log(log_debug, "%s: connect proxy %s:%u success",
+						this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
+				break;
+			}
 			td_log(log_debug, "%s: failed to connect to proxy %s:%u", 
 					this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
 		}
@@ -83,7 +90,13 @@ bool td_service_tcprelay::accept_new_incoming(SOCKET_T so) {
 	}
 #else
 	for ( auto &_socks5 : _cfg->proxy_list() ) {
-		if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
+		if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) {
+			td_log(log_debug, "%s: connect proxy %s:%u success",
+					this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
+			break;
+		}
+		td_log(log_debug, "%s: failed to connect to proxy %s:%u", 
+				this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
 	}
 	_ret = _wrap_dst.connect(_org_addr, _org_port);
 #endif

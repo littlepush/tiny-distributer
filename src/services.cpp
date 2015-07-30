@@ -133,7 +133,7 @@ td_service_tunnel::~td_service_tunnel() {
 }
 
 void td_service_tunnel::_did_accept_sockets(SOCKET_T src, SOCKET_T dst) {
-	td_log(log_debug, "server(%s) did accept incoming so(%d) and relay so(%d)", 
+	td_log(log_notice, "server(%s) did accept incoming so(%d) and relay so(%d)", 
 			this->server_name().c_str(), src, dst);
 	sl_tcpsocket _wsrc(src), _wdst(dst);
 	_wsrc.set_socketbufsize(config_->socket_buffer_size(), config_->socket_buffer_size());
@@ -171,7 +171,7 @@ void td_service_tunnel::close_socket(SOCKET_T so) {
 	SOCKET_T _dso = _peer->second;
 	so_map_.erase(so);
 	// Close and clear
-	td_log(log_debug, "server(%s) has close socket %d relay with %d", 
+	td_log(log_notice, "server(%s) has close socket %d relay with %d", 
 			this->server_name().c_str(), so, _dso);
 	close(_dso);
 	request_so_.erase(_dso);
@@ -254,7 +254,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 #ifdef USE_THREAD_SERVICE
 		unique_lock<mutex> _l(service_mutex_);
 		if ( so_map_.find(so) == so_map_.end() ) {
-			td_log(log_debug, "server(%s) has already close so(%d)",
+			td_log(log_info, "server(%s) has already close so(%d)",
 					this->server_name().c_str(), so);
 			_wrapso.close();
 			_st = SO_READ_WAITING;
@@ -266,7 +266,7 @@ void td_service_tunnel::_read_incoming_data(SOCKET_T&& so) {
 #else
 		// Which means unfinished
 		if ( _st & SO_READ_TIMEOUT ) {
-			td_log(log_debug, "server(%s) read time on so(%s), try more",
+			td_log(log_info, "server(%s) read time on so(%s), try more",
 					this->server_name().c_str(), so);
 			continue;
 		}

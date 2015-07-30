@@ -43,7 +43,13 @@ bool td_service_redirect::accept_new_incoming(SOCKET_T so) {
 	td_config_redirect *_cfg = static_cast<td_config_redirect *>(config_);
 	for ( auto &_dst : _cfg->destination_list() ) {
 		for ( auto &_socks5 : _dst.socks5 ) {
-			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) break;
+			if ( _wrap_dst.setup_proxy(_socks5.first, _socks5.second) ) {
+				td_log(log_debug, "%s: connect proxy %s:%u success",
+						this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
+				break;
+			}
+			td_log(log_debug, "%s: failed to connect to proxy %s:%u", 
+					this->server_name().c_str(), _socks5.first.c_str(), _socks5.second);
 		}
 		if ( _wrap_dst.connect(_dst.ipaddr, _dst.port) ) break;
 		_wrap_dst.close();
